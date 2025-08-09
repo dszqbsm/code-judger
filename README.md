@@ -37,10 +37,278 @@
 
 #### 用户管理模块 (User Management)
 **功能描述**: 处理用户注册、登录、权限管理等功能
-- 用户注册/登录/登出
-- 用户信息管理
-- 角色权限控制（用户、管理员）
-- 用户统计信息
+
+##### 1.1.1 业务功能概述
+
+用户服务作为在线判题系统的核心基础服务，负责管理系统中所有用户的生命周期，包括身份认证、权限控制、个人信息管理等关键功能。该服务需要支持高并发用户访问，确保数据安全性和系统稳定性。
+
+##### 1.1.2 功能优先级表格
+
+| 优先级 | 功能分类 | 具体功能 | 业务价值 | 技术复杂度 |
+|--------|----------|----------|----------|------------|
+| **P0 (核心功能)** | 身份认证 | 用户注册 | 用户获取系统访问权限 | 中 |
+| **P0 (核心功能)** | 身份认证 | 用户登录/登出 | 用户身份验证和会话管理 | 中 |
+| **P0 (核心功能)** | 权限控制 | JWT令牌管理 | 无状态认证，支持分布式部署 | 高 |
+| **P0 (核心功能)** | 权限控制 | 基础RBAC权限控制 | 区分学生、教师、管理员角色 | 高 |
+| **P1 (重要功能)** | 信息管理 | 个人信息修改 | 用户体验提升 | 低 |
+| **P1 (重要功能)** | 信息管理 | 密码修改 | 账户安全管理 | 中 |
+| **P1 (重要功能)** | 会话管理 | 多设备登录控制 | 安全性和用户体验平衡 | 中 |
+| **P1 (重要功能)** | 安全功能 | 邮箱验证 | 提升注册质量，防止垃圾账户 | 中 |
+| **P2 (扩展功能)** | 统计分析 | 用户行为统计 | 业务数据分析 | 中 |
+| **P2 (扩展功能)** | 安全功能 | 登录频率限制 | 防止暴力破解 | 中 |
+| **P2 (扩展功能)** | 社交功能 | 用户关注/粉丝 | 社区功能增强 | 中 |
+| **P2 (扩展功能)** | 高级认证 | 第三方登录(OAuth) | 提升用户体验 | 高 |
+| **P2 (扩展功能)** | 高级认证 | 双因子认证(2FA) | 提升账户安全性 | 高 |
+
+##### 1.1.3 API接口设计
+
+###### 核心认证接口
+
+| 接口名称 | HTTP方法 | 路径 | 功能描述 |
+|----------|----------|------|----------|
+| 用户注册 | POST | `/api/v1/auth/register` | 新用户注册 |
+| 用户登录 | POST | `/api/v1/auth/login` | 用户身份验证 |
+| 用户登出 | POST | `/api/v1/auth/logout` | 用户会话注销 |
+| 刷新令牌 | POST | `/api/v1/auth/refresh` | JWT令牌刷新 |
+| 邮箱验证 | POST | `/api/v1/auth/verify-email` | 邮箱验证确认 |
+
+**用户注册接口详细设计**：
+```json
+// POST /api/v1/auth/register
+{
+  "username": "student123",
+  "email": "student@example.com", 
+  "password": "SecurePass123!",
+  "confirm_password": "SecurePass123!",
+  "role": "student"
+}
+
+// 响应格式
+{
+  "code": 200,
+  "message": "注册成功",
+  "data": {
+    "user_id": 1001,
+    "username": "student123",
+    "email": "student@example.com",
+    "role": "student",
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+**用户登录接口详细设计**：
+```json
+// POST /api/v1/auth/login
+{
+  "username": "student123",
+  "password": "SecurePass123!"
+}
+
+// 响应格式
+{
+  "code": 200,
+  "message": "登录成功",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "Bearer",
+    "expires_in": 3600,
+    "user_info": {
+      "user_id": 1001,
+      "username": "student123",
+      "email": "student@example.com",
+      "role": "student"
+    }
+  }
+}
+```
+
+###### 用户信息管理接口
+
+| 接口名称 | HTTP方法 | 路径 | 功能描述 |
+|----------|----------|------|----------|
+| 获取个人信息 | GET | `/api/v1/users/profile` | 获取当前用户信息 |
+| 更新个人信息 | PUT | `/api/v1/users/profile` | 更新用户基本信息 |
+| 修改密码 | PUT | `/api/v1/users/password` | 修改用户密码 |
+| 获取用户统计 | GET | `/api/v1/users/{user_id}/stats` | 获取用户提交统计 |
+| 用户列表 | GET | `/api/v1/users` | 获取用户列表(管理员) |
+
+###### 权限管理接口
+
+| 接口名称 | HTTP方法 | 路径 | 功能描述 |
+|----------|----------|------|----------|
+| 角色权限验证 | POST | `/api/v1/auth/verify-permission` | 验证用户权限 |
+| 更新用户角色 | PUT | `/api/v1/users/{user_id}/role` | 修改用户角色(管理员) |
+| 获取用户权限 | GET | `/api/v1/users/{user_id}/permissions` | 获取用户权限列表 |
+
+##### 1.1.4 技术难点分析
+
+###### 1. 密码安全存储
+**技术挑战**：
+- 用户密码需要安全存储，防止数据泄露后被破解
+- 密码验证需要高效，不能影响登录性能
+- 需要支持密码复杂度验证
+
+**解决方案**：
+- **密码哈希算法**：使用bcrypt算法进行密码哈希，成本因子设置为12
+- **盐值处理**：bcrypt内置随机盐值，防彩虹表攻击
+- **密码复杂度**：前端+后端双重验证，确保密码强度
+
+```go
+// 密码哈希示例
+func HashPassword(password string) (string, error) {
+    hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+    if err != nil {
+        return "", err
+    }
+    return string(hash), nil
+}
+
+// 密码验证示例
+func VerifyPassword(hashedPassword, password string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+    return err == nil
+}
+```
+
+###### 2. JWT令牌管理
+**技术挑战**：
+- JWT无状态特性导致令牌撤销困难
+- 令牌过期时间平衡安全性和用户体验
+- 防止令牌被盗用和重放攻击
+
+**解决方案**：
+- **双令牌机制**：AccessToken(短期) + RefreshToken(长期)
+- **令牌黑名单**：Redis存储已撤销的令牌ID，实现强制登出
+- **安全配置**：HTTPS传输、HttpOnly Cookie、CSRF保护
+
+```go
+// JWT令牌结构设计
+type Claims struct {
+    UserID   int64  `json:"user_id"`
+    Username string `json:"username"`
+    Role     string `json:"role"`
+    TokenID  string `json:"jti"` // 用于黑名单机制
+    jwt.StandardClaims
+}
+
+// 令牌配置
+const (
+    AccessTokenExpire  = 15 * time.Minute  // 访问令牌15分钟
+    RefreshTokenExpire = 7 * 24 * time.Hour // 刷新令牌7天
+)
+```
+
+###### 3. 高并发用户认证
+**技术挑战**：
+- 用户登录高峰期需要处理大量并发认证请求
+- 数据库查询压力大，影响响应性能
+- 需要防止认证服务成为系统瓶颈
+
+**解决方案**：
+- **多级缓存**：Redis缓存用户基本信息，减少数据库查询
+- **数据库优化**：用户名和邮箱字段建立唯一索引
+- **连接池管理**：合理配置数据库连接池，避免连接耗尽
+
+```go
+// 缓存策略设计
+type UserCache struct {
+    redis *redis.Client
+}
+
+// 用户信息缓存键格式
+const (
+    UserCacheKeyFormat = "user:info:%d"     // user:info:1001
+    UserCacheTTL       = 30 * time.Minute   // 缓存30分钟
+)
+
+// 缓存用户信息
+func (uc *UserCache) SetUserInfo(userID int64, user *User) error {
+    key := fmt.Sprintf(UserCacheKeyFormat, userID)
+    data, _ := json.Marshal(user)
+    return uc.redis.Set(context.Background(), key, data, UserCacheTTL).Err()
+}
+```
+
+###### 4. 权限控制设计
+**技术挑战**：
+- RBAC权限模型设计的灵活性和性能平衡
+- 权限验证的性能优化
+- 权限变更的实时生效
+
+**解决方案**：
+- **简化RBAC模型**：基于角色的三级权限（学生、教师、管理员）
+- **权限中间件**：go-zero中间件实现统一权限验证
+- **权限缓存**：Redis缓存用户权限信息，权限变更时清除缓存
+
+```go
+// 权限中间件设计
+func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        token := extractToken(r)
+        claims, err := validateToken(token)
+        if err != nil {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+        
+        // 检查权限
+        if !hasPermission(claims.Role, r.URL.Path, r.Method) {
+            http.Error(w, "Forbidden", http.StatusForbidden)
+            return
+        }
+        
+        // 将用户信息加入上下文
+        ctx := context.WithValue(r.Context(), "user", claims)
+        next(w, r.WithContext(ctx))
+    }
+}
+```
+
+###### 5. 数据一致性保证
+**技术挑战**：
+- 用户信息在数据库和缓存中的一致性
+- 分布式环境下的并发更新问题
+- 事务处理的性能优化
+
+**解决方案**：
+- **延迟双删除**：更新数据时先删缓存，更新数据库，再删缓存
+- **分布式锁**：Redis分布式锁防止并发更新冲突
+- **乐观锁**：使用版本号或更新时间戳实现乐观锁机制
+
+##### 1.1.5 微服务技术实现
+
+###### 基于go-zero的服务架构
+```go
+// 用户服务配置 - user-api.yaml
+Name: user-api
+Host: 0.0.0.0
+Port: 8888
+
+# MySQL数据库配置
+DataSource: root:password@tcp(mysql:3306)/oj_users?charset=utf8mb4&parseTime=true
+
+# Redis配置
+RedisConf:
+  Host: redis:6379
+  Type: node
+
+# JWT配置
+Auth:
+  AccessSecret: "your-access-secret"
+  AccessExpire: 3600
+
+# 服务注册到Consul
+Consul:
+  Host: consul:8500
+  Key: user-api
+```
+
+###### 服务间通信设计
+- **同步调用**：通过Consul服务发现 + HTTP调用
+- **异步通信**：Kafka消息队列处理用户状态变更事件
+- **数据隔离**：用户服务拥有独立的数据库实例
 
 #### 题目管理模块 (Problem Management)
 **功能描述**: 题目的创建、编辑、分类管理
