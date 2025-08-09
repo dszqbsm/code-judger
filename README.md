@@ -838,6 +838,192 @@ sequenceDiagram
 
 ---
 
+## 4. 本地开发环境
+
+### 4.1 Docker 开发环境
+
+项目提供了完整的 Docker 开发环境，包含所有必需的中间件服务，让开发者能够快速搭建本地开发环境。
+
+#### 4.1.1 环境组件
+
+开发环境包含以下核心组件：
+
+| 组件 | 版本 | 端口 | 说明 |
+|------|------|------|------|
+| **MySQL** | 8.0 | 3306 | 主数据库，包含完整的表结构和初始数据 |
+| **Redis** | 7 | 6379 | 缓存服务，用于会话管理和数据缓存 |
+| **Apache Kafka** | 7.4.0 | 9094 | 消息队列，处理异步判题任务 |
+| **Zookeeper** | 7.4.0 | 2181 | Kafka 依赖的协调服务 |
+| **Elasticsearch** | 8.11.0 | 9200 | 日志存储和搜索引擎 |
+| **Logstash** | 8.11.0 | 5044 | 日志处理和转换 |
+| **Kibana** | 8.11.0 | 5601 | 日志可视化和分析 |
+| **Consul** | 1.16 | 8500 | 服务注册和发现中心 |
+| **Prometheus** | 2.47.0 | 9090 | 监控指标收集 |
+| **Grafana** | 10.1.0 | 3000 | 监控可视化面板 |
+
+#### 4.1.2 快速启动
+
+##### 前置要求
+- Docker 20.0+
+- Docker Compose 2.0+
+- 可用内存 4GB+
+- 可用磁盘空间 10GB+
+
+##### 一键启动
+```bash
+# 克隆项目
+git clone <项目地址>
+cd code-judger
+
+# 启动开发环境
+./start-dev-env.sh
+
+# 或使用 Makefile
+make dev
+```
+
+##### 验证环境
+```bash
+# 完整验证
+./verify-env.sh
+
+# 快速验证
+make verify-quick
+```
+
+#### 4.1.3 常用操作
+
+##### 服务管理
+```bash
+# 查看服务状态
+make status
+
+# 查看服务日志
+make logs
+
+# 重启特定服务
+make restart-mysql
+make restart-redis
+make restart-kafka
+```
+
+##### 数据库操作
+```bash
+# 连接数据库
+make db-connect
+
+# 备份数据库
+make db-backup
+
+# 连接 Redis
+make redis-connect
+```
+
+##### 监控和调试
+```bash
+# 查看监控面板地址
+make monitoring-urls
+
+# 进入容器调试
+make shell-mysql
+make shell-redis
+make shell-kafka
+```
+
+#### 4.1.4 服务访问地址
+
+启动成功后，可以通过以下地址访问各个服务：
+
+- **数据库**: `localhost:3306` (用户: `oj_user`, 密码: `oj_password`)
+- **缓存**: `localhost:6379`
+- **消息队列**: `localhost:9094`
+- **Kafka UI**: http://localhost:8080
+- **日志搜索**: http://localhost:9200
+- **日志可视化**: http://localhost:5601
+- **服务注册**: http://localhost:8500
+- **监控指标**: http://localhost:9090
+- **监控面板**: http://localhost:3000 (用户: `admin`, 密码: `oj_grafana_admin`)
+
+#### 4.1.5 开发最佳实践
+
+##### 数据持久化
+- 所有数据存储在 Docker volumes 中
+- 重启容器不会丢失数据
+- 定期备份重要数据
+
+##### 性能优化
+- 根据本机配置调整内存限制
+- 使用 SSD 磁盘提升 I/O 性能
+- 合理配置数据库连接池
+
+##### 调试技巧
+- 使用 `make logs-<service>` 查看特定服务日志
+- 通过 Grafana 监控系统性能
+- 使用 Kibana 分析应用日志
+
+### 4.2 开发工作流
+
+#### 4.2.1 首次环境搭建
+```bash
+# 1. 设置环境
+make setup
+
+# 2. 启动服务
+make start
+
+# 3. 验证环境
+make verify
+
+# 4. 查看访问地址
+make monitoring-urls
+```
+
+#### 4.2.2 日常开发流程
+```bash
+# 启动开发环境
+make start
+
+# 开发过程中查看日志
+make logs
+
+# 测试完成后停止服务
+make stop
+```
+
+#### 4.2.3 故障排查
+```bash
+# 查看服务状态
+make status
+
+# 查看特定服务日志
+make logs-mysql
+
+# 重启有问题的服务
+make restart-mysql
+
+# 完整验证环境
+make verify
+```
+
+---
+
 ## 总结
 
-本在线判题系统采用现代化的微服务架构，结合Go语言的高性能特性和Docker容器化技术，构建了一个安全、高效、可扩展的在线编程学习平台。通过详细的技术选型分析、系统架构设计和开发计划，为项目的成功实施奠定了坚实的基础。
+本在线判题系统采用现代化的微服务架构，结合Go语言的高性能特性和Docker容器化技术，构建了一个安全、高效、可扩展的在线编程学习平台。
+
+### 项目特色
+
+- **🏗️ 微服务架构**: 基于 go-zero 框架的完整微服务体系
+- **📊 全栈监控**: Prometheus + Grafana + ELK 完整监控方案  
+- **🚀 高性能**: Kafka + Redis + MySQL 高性能技术栈
+- **🔒 高安全**: Docker 容器隔离 + JWT 认证 + 权限控制
+- **🛠️ 开箱即用**: 完整的 Docker 开发环境，一键启动
+
+### 开发优势
+
+- **完整的本地环境**: Docker Compose 一键启动全套基础设施
+- **详细的技术文档**: 包含技术选型分析、架构设计、开发指南
+- **最佳实践指导**: 提供安全、性能、监控等方面的最佳实践
+- **便捷的开发工具**: Makefile 脚本简化日常开发操作
+
+通过详细的技术选型分析、系统架构设计、用户服务深度分析和完整的开发环境搭建，为项目的成功实施奠定了坚实的基础。开发团队可以立即开始高效的微服务开发工作。

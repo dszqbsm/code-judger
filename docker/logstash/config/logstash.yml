@@ -1,0 +1,40 @@
+# Logstash 配置文件
+# 针对在线判题系统日志处理优化
+
+# 节点设置
+node.name: logstash-oj
+
+# 数据路径
+path.data: /usr/share/logstash/data
+
+# 管道设置
+pipeline.workers: 2
+pipeline.batch.size: 125
+pipeline.batch.delay: 50
+
+# HTTP API设置
+http.host: "0.0.0.0"
+http.port: 9600
+
+# 配置重载
+config.reload.automatic: true
+config.reload.interval: 3s
+
+# 日志设置
+log.level: info
+path.logs: /usr/share/logstash/logs
+
+# JVM 设置
+# 在环境变量中设置: LS_JAVA_OPTS="-Xmx256m -Xms256m"
+
+# 队列设置
+queue.type: memory
+queue.max_bytes: 1gb
+
+# 死信队列
+dead_letter_queue.enable: true
+dead_letter_queue.max_bytes: 1gb
+
+# Elasticsearch 输出配置
+output.elasticsearch.template.enabled: true
+output.elasticsearch.template.overwrite: true

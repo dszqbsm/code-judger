@@ -1,0 +1,65 @@
+# Kibana 配置文件
+# 针对在线判题系统日志可视化优化
+
+# 服务器设置
+server.name: "oj-kibana"
+server.host: "0.0.0.0"
+server.port: 5601
+
+# Elasticsearch 连接
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.requestTimeout: 30000
+elasticsearch.shardTimeout: 30000
+
+# 日志设置
+logging.appenders.file.type: file
+logging.appenders.file.fileName: /usr/share/kibana/logs/kibana.log
+logging.appenders.file.layout.type: json
+
+logging.root.level: info
+logging.root.appenders: [default, file]
+
+# 国际化设置
+i18n.locale: "zh-CN"
+
+# 监控设置
+monitoring.ui.container.elasticsearch.enabled: true
+
+# 安全设置（开发环境暂时禁用）
+elasticsearch.ssl.verificationMode: none
+
+# 索引模式设置
+kibana.index: ".kibana"
+kibana.defaultAppId: "discover"
+
+# UI 设置
+server.maxPayloadBytes: 1048576
+
+# 数据视图设置
+data.search.timeout: 30000
+
+# 保存对象的最大数量
+savedObjects.maxImportPayloadBytes: 26214400
+
+# 控制台设置
+console.enabled: true
+
+# 时区设置
+dateFormat:tz: "Asia/Shanghai"
+
+# 默认索引模式
+kibana.autocompleteTimeout: 1000
+kibana.autocompleteTerminateAfter: 100000
+
+# 地图设置（如果需要）
+map.includeElasticMapsService: false
+
+# Telemetry 设置
+telemetry.enabled: false
+telemetry.optIn: false
+
+# 新功能通知
+newsfeed.enabled: false
+
+# 状态页面设置
+status.allowAnonymous: true

@@ -1,0 +1,118 @@
+# 在线判题系统 Prometheus 告警规则
+# Online Judge System Prometheus Alert Rules
+
+groups:
+  - name: oj-system-alerts
+    rules:
+      # 服务可用性告警
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "服务 {{ $labels.instance }} 不可用"
+          description: "服务 {{ $labels.job }} 在实例 {{ $labels.instance }} 上已下线超过1分钟"
+
+      # 高错误率告警
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"5.."}[5m]) /
+            rate(http_requests_total[5m])
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "高错误率检测"
+          description: "服务 {{ $labels.job }} 的错误率在过去5分钟内超过5%"
+
+      # 高响应时间告警
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "响应时间过高"
+          description: "服务 {{ $labels.job }} 的95%响应时间超过1秒"
+
+  - name: oj-infrastructure-alerts
+    rules:
+      # MySQL 连接数告警
+      - alert: MySQLHighConnections
+        expr: mysql_global_status_threads_connected / mysql_global_variables_max_connections * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL 连接数过高"
+          description: "MySQL 连接数使用率超过80%"
+
+      # Redis 内存使用告警
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis 内存使用率过高"
+          description: "Redis 内存使用率超过80%"
+
+      # Kafka 消费延迟告警
+      - alert: KafkaConsumerLag
+        expr: kafka_consumer_lag_sum > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka 消费延迟过高"
+          description: "Kafka 消费者延迟超过1000条消息"
+
+      # Elasticsearch 集群状态告警
+      - alert: ElasticsearchClusterNotHealthy
+        expr: elasticsearch_cluster_health_status{color="red"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Elasticsearch 集群状态异常"
+          description: "Elasticsearch 集群状态为红色"
+
+  - name: oj-business-alerts
+    rules:
+      # 判题队列积压告警
+      - alert: JudgeQueueBacklog
+        expr: kafka_consumer_lag_sum{topic="judge-tasks"} > 500
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "判题队列积压"
+          description: "判题任务队列积压超过500个任务"
+
+      # 用户注册异常告警
+      - alert: UserRegistrationFailure
+        expr: increase(user_registration_failures_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "用户注册失败率过高"
+          description: "过去5分钟内用户注册失败次数超过10次"
+
+      # 判题失败率告警
+      - alert: HighJudgeFailureRate
+        expr: |
+          (
+            rate(judge_submissions_total{status="system_error"}[10m]) /
+            rate(judge_submissions_total[10m])
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "判题系统错误率过高"
+          description: "判题系统错误率在过去10分钟内超过5%"

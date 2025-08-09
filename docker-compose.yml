@@ -1,0 +1,402 @@
+# 文件名：docker-compose.yml
+# 用途：在线判题系统本地开发环境的Docker编排配置文件
+# 创建日期：2024-01-15
+# 版本：v1.0
+# 说明：定义了完整的微服务开发环境，包含数据库、缓存、消息队列、日志系统、监控系统等9个核心服务
+# 依赖：./docker/ 目录下的各服务配置文件，start-dev-env.sh 启动脚本
+#
+# 技术架构：
+# - 数据层：MySQL 8.0 (主数据库) + Redis (缓存)
+# - 消息层：Apache Kafka + Zookeeper (异步消息处理)
+# - 日志层：Elasticsearch + Logstash + Kibana (ELK日志分析)
+# - 治理层：Consul (服务注册发现)
+# - 监控层：Prometheus + Grafana (系统监控)
+#
+# 网络设计：
+# - 使用自定义bridge网络 oj-network
+# - 子网：172.20.0.0/16 (与宿主机网络隔离)
+# - 各服务分配固定IP，便于服务间通信和调试
+
+version: '3.8'  # Docker Compose 文件格式版本，支持最新特性
+
+# ===========================================
+# 网络配置
+# ===========================================
+networks:
+  oj-network:                           # 自定义网络名称，所有服务都连接到此网络
+    driver: bridge                      # 使用bridge驱动，提供容器间通信和外部访问能力
+    ipam:                              # IP地址管理配置
+      config:
+        - subnet: 172.20.0.0/16        # 子网范围：172.20.0.1-172.20.255.254，避免与宿主机网络冲突
+
+# ===========================================
+# 数据卷配置 - 持久化存储
+# ===========================================
+volumes:
+  mysql_data:          # MySQL数据文件存储，包含数据库、表结构、索引等
+  redis_data:          # Redis持久化数据，包含RDB快照和AOF日志
+  elasticsearch_data:  # Elasticsearch索引数据，包含日志文档和元数据
+  kafka_data:          # Kafka消息数据，包含topic分区和消息日志
+  zookeeper_data:      # Zookeeper协调数据，包含集群状态和配置信息
+  consul_data:         # Consul服务发现数据，包含服务注册信息和KV存储
+  prometheus_data:     # Prometheus监控数据，包含时序指标和告警状态
+  grafana_data:        # Grafana仪表板数据，包含用户配置和自定义面板
+
+# ===========================================
+# 微服务定义
+# ===========================================
+services:
+  # ===========================================
+  # MySQL 8.0 - 主数据库服务
+  # 用途：存储用户信息、题目数据、提交记录、比赛数据等核心业务数据
+  # 特性：ACID事务支持、高性能索引、主从复制准备
+  # ===========================================
+  mysql:
+    image: mysql:8.0                           # 使用官方MySQL 8.0镜像，支持最新特性和安全更新
+    container_name: oj-mysql                   # 容器名称，便于日志查看和调试
+    restart: unless-stopped                    # 重启策略：除非手动停止，否则自动重启
+    ports:
+      - "3306:3306"                           # 端口映射：宿主机3306 -> 容器3306，支持外部客户端连接
+    environment:                              # 环境变量配置
+      MYSQL_ROOT_PASSWORD: oj_root_password   # 管理员密码，生产环境需要修改
+      MYSQL_DATABASE: oj_system               # 默认创建的数据库名称
+      MYSQL_USER: oj_user                     # 应用使用的数据库用户
+      MYSQL_PASSWORD: oj_password             # 应用用户密码，生产环境需要修改
+      TZ: Asia/Shanghai                       # 时区设置，确保时间一致性
+    volumes:                                  # 数据卷挂载
+      - mysql_data:/var/lib/mysql             # 数据目录持久化，重启容器不丢失数据
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d  # 初始化脚本目录，容器首次启动时执行
+      - ./docker/mysql/conf:/etc/mysql/conf.d # 自定义配置目录，覆盖默认MySQL配置
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=1000
+      --innodb_buffer_pool_size=256M
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.10
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===========================================
+  # Redis 7 - 高性能缓存服务
+  # 用途：会话存储、排行榜缓存、临时数据存储、分布式锁、任务队列
+  # 特性：内存数据库、持久化支持、发布订阅、主从复制
+  # ===========================================
+  redis:
+    image: redis:7-alpine                       # 使用Alpine版本，体积小、安全性高
+    container_name: oj-redis                    # 容器名称，便于管理和日志查看
+    restart: unless-stopped                     # 重启策略：异常退出时自动重启
+    ports:
+      - "6379:6379"                            # 端口映射：Redis标准端口
+    environment:                               # 环境变量
+      TZ: Asia/Shanghai                         # 时区设置，确保日志时间准确
+    volumes:                                   # 数据卷挂载
+      - redis_data:/data                        # 数据持久化目录（RDB和AOF文件）
+      - ./docker/redis/redis.conf:/etc/redis/redis.conf  # 自定义配置文件
+    command: redis-server /etc/redis/redis.conf --appendonly yes  # 启动命令，启用AOF持久化
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.20              # 固定IP，便于其他服务连接
+    healthcheck:                               # 健康检查
+      test: ["CMD", "redis-cli", "ping"]        # 使用PING命令检查Redis可用性
+      interval: 30s                            # 检查间隔
+      timeout: 10s                             # 超时时间
+      retries: 3                               # 重试次数
+
+  # ===========================================
+  # Apache Zookeeper - 分布式协调服务
+  # 用途：Kafka集群协调、配置管理、分布式锁、命名服务
+  # 特性：强一致性、高可用性、顺序访问、监听机制
+  # ===========================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0       # Confluent官方Zookeeper镜像，与Kafka完美兼容
+    container_name: oj-zookeeper                 # 容器名称，便于识别和管理
+    restart: unless-stopped                      # 重启策略：保证高可用性
+    ports:
+      - "2181:2181"                             # 端口映射：Zookeeper标准客户端端口
+    environment:                                # 环境变量配置
+      ZOOKEEPER_CLIENT_PORT: 2181               # 客户端连接端口
+      ZOOKEEPER_TICK_TIME: 2000                 # 基础时间单位（毫秒），用于心跳和超时计算
+      TZ: Asia/Shanghai                          # 时区设置
+    volumes:                                    # 数据卷挂载
+      - zookeeper_data:/var/lib/zookeeper/data  # 数据持久化，包含事务日志和快照
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.30               # 固定IP，便于Kafka连接
+    healthcheck:                                # 健康检查
+      test: ["CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181"]  # 发送ruok命令检查状态
+      interval: 30s                             # 检查间隔
+      timeout: 10s                              # 超时时间
+      retries: 3                                # 重试次数
+
+  # ===========================================
+  # Apache Kafka - 高吞吐量分布式消息队列
+  # 用途：判题任务异步处理、用户行为事件、系统日志收集、实时数据流
+  # 特性：高吞吐量、持久化、分区、副本、零拷贝、批量处理
+  # ===========================================
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0          # Confluent官方Kafka镜像，企业级功能完整
+    container_name: oj-kafka                    # 容器名称
+    restart: unless-stopped                     # 重启策略：确保消息队列服务连续性
+    depends_on:                                 # 服务依赖
+      zookeeper:
+        condition: service_healthy              # 等待Zookeeper健康后启动
+    ports:                                      # 端口映射
+      - "9092:9092"                            # 内部通信端口（容器间）
+      - "9094:9094"                            # 外部访问端口（宿主机客户端）
+    environment:                               # Kafka核心配置
+      KAFKA_BROKER_ID: 1                       # 集群中唯一的Broker ID
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181  # Zookeeper连接地址
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT  # 监听器安全协议映射
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094           # 监听器配置
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094 # 对外公布的监听器地址
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT     # Broker间通信使用的监听器
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1       # 偏移量主题副本因子（单节点设为1）
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1  # 事务状态日志副本因子
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1           # 事务状态日志最小同步副本数
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true           # 自动创建主题，便于开发调试
+      KAFKA_NUM_PARTITIONS: 3                         # 新主题默认分区数，提高并行度
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1             # 默认副本因子（单节点设为1）
+      TZ: Asia/Shanghai                                # 时区设置
+    volumes:                                   # 数据卷挂载
+      - kafka_data:/var/lib/kafka/data          # 消息数据持久化存储
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.31              # 固定IP地址
+    healthcheck:                               # 健康检查
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]  # 检查Broker API
+      interval: 30s                            # 检查间隔
+      timeout: 10s                             # 超时时间
+      retries: 5                               # 重试次数
+      start_period: 60s                        # 启动等待时间
+
+  # ===========================================
+  # Elasticsearch - 分布式搜索和分析引擎
+  # 用途：日志存储、全文搜索、实时分析、数据聚合、监控指标存储
+  # 特性：分布式架构、近实时搜索、RESTful API、丰富的查询DSL
+  # ===========================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0  # Elastic官方镜像，最新稳定版
+    container_name: oj-elasticsearch            # 容器名称
+    restart: unless-stopped                     # 重启策略：确保数据服务高可用
+    ports:                                      # 端口映射
+      - "9200:9200"                            # HTTP API端口，用于REST API访问
+      - "9300:9300"                            # 传输端口，用于节点间通信
+    environment:                               # Elasticsearch配置
+      - node.name=es-node-1                    # 节点名称，便于集群管理
+      - cluster.name=oj-cluster                # 集群名称，用于节点发现
+      - discovery.type=single-node             # 单节点模式，适合开发环境
+      - bootstrap.memory_lock=true             # 锁定内存，防止交换到磁盘影响性能
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"      # JVM堆内存设置，限制内存使用
+      - xpack.security.enabled=false          # 禁用安全功能，简化开发环境配置
+      - xpack.security.enrollment.enabled=false  # 禁用安全注册
+      - TZ=Asia/Shanghai                       # 时区设置
+    ulimits:                                   # 系统资源限制
+      memlock:                                 # 内存锁定限制（配合bootstrap.memory_lock使用）
+        soft: -1                               # 软限制：无限制
+        hard: -1                               # 硬限制：无限制
+    volumes:                                   # 数据卷挂载
+      - elasticsearch_data:/usr/share/elasticsearch/data  # 索引数据持久化存储
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.40              # 固定IP地址
+    healthcheck:                               # 健康检查
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]  # 检查集群健康状态
+      interval: 30s                            # 检查间隔
+      timeout: 10s                             # 超时时间
+      retries: 5                               # 重试次数
+      start_period: 60s                        # 启动等待时间（ES启动较慢）
+
+  # ===========================================
+  # Logstash - 数据处理管道引擎
+  # 用途：日志收集、数据解析、格式转换、数据增强、多源数据聚合
+  # 特性：实时处理、插件丰富、多输入输出、过滤器链、缓冲机制
+  # ===========================================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0  # Elastic官方Logstash镜像
+    container_name: oj-logstash                 # 容器名称
+    restart: unless-stopped                     # 重启策略：确保日志处理连续性
+    depends_on:                                 # 服务依赖
+      elasticsearch:
+        condition: service_healthy              # 等待Elasticsearch健康后启动
+    ports:                                      # 端口映射
+      - "5044:5044"                            # Beats输入端口（Filebeat、Metricbeat等）
+      - "5000:5000/tcp"                        # TCP日志输入端口
+      - "5000:5000/udp"                        # UDP日志输入端口  
+      - "9600:9600"                            # HTTP API端口，用于监控和管理
+    environment:                               # 环境变量配置
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"       # JVM内存设置，适合小型环境
+      TZ: Asia/Shanghai                         # 时区设置，确保日志时间准确
+    volumes:                                   # 配置文件挂载
+      - ./docker/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro    # 主配置文件（只读）
+      - ./docker/logstash/pipeline:/usr/share/logstash/pipeline:ro                         # 管道配置目录（只读）
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.41              # 固定IP地址
+    healthcheck:                               # 健康检查
+      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]  # 检查HTTP API可用性
+      interval: 30s                            # 检查间隔
+      timeout: 10s                             # 超时时间
+      retries: 5                               # 重试次数
+      start_period: 60s                        # 启动等待时间
+
+  # ===========================================
+  # Kibana - 数据可视化和管理平台
+  # 用途：日志查询分析、数据可视化、仪表板制作、索引管理、告警配置
+  # 特性：直观界面、丰富图表、实时搜索、机器学习、插件扩展
+  # ===========================================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0  # Elastic官方Kibana镜像
+    container_name: oj-kibana                   # 容器名称
+    restart: unless-stopped                     # 重启策略：确保可视化服务可用
+    depends_on:                                 # 服务依赖
+      elasticsearch:
+        condition: service_healthy              # 等待Elasticsearch健康后启动
+    ports:                                      # 端口映射
+      - "5601:5601"                            # Web界面端口，用户访问入口
+    environment:                               # 环境变量配置
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'  # Elasticsearch连接地址
+      SERVER_NAME: oj-kibana                   # 服务器名称标识
+      TZ: Asia/Shanghai                         # 时区设置
+    volumes:                                   # 配置文件挂载
+      - ./docker/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro  # 自定义配置（只读）
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.42              # 固定IP地址
+    healthcheck:                               # 健康检查
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]  # 检查API状态
+      interval: 30s                            # 检查间隔
+      timeout: 10s                             # 超时时间
+      retries: 5                               # 重试次数
+      start_period: 120s                       # 启动等待时间（Kibana启动较慢）
+
+  # ===========================================
+  # HashiCorp Consul - 服务网格和服务发现
+  # 用途：服务注册发现、健康检查、配置管理、KV存储、服务网格
+  # 特性：分布式一致性、多数据中心、DNS接口、Web UI、API网关
+  # ===========================================
+  consul:
+    image: consul:1.16                          # HashiCorp官方Consul镜像，企业级服务治理
+    container_name: oj-consul                   # 容器名称
+    restart: unless-stopped                     # 重启策略：确保服务发现高可用
+    ports:                                      # 端口映射
+      - "8500:8500"                            # HTTP API和Web UI端口
+      - "8600:8600/udp"                        # DNS接口端口，支持服务名解析
+    environment:                               # 环境变量
+      TZ: Asia/Shanghai                         # 时区设置
+    volumes:                                   # 数据和配置挂载
+      - consul_data:/consul/data                # 数据持久化存储
+      - ./docker/consul/config:/consul/config:ro  # 配置文件目录（只读）
+    command: >                                 # 启动命令配置
+      consul agent
+      -server                                  # 以服务器模式启动
+      -bootstrap-expect=1                      # 期望的服务器节点数（单节点集群）
+      -data-dir=/consul/data                   # 数据存储目录
+      -config-dir=/consul/config               # 配置文件目录
+      -ui                                      # 启用Web UI界面
+      -bind=0.0.0.0                           # 集群通信绑定地址
+      -client=0.0.0.0                         # 客户端接口绑定地址
+      -log-level=INFO                          # 日志级别
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.50              # 固定IP地址
+    healthcheck:                               # 健康检查
+      test: ["CMD", "consul", "members"]        # 检查集群成员状态
+      interval: 30s                            # 检查间隔
+      timeout: 10s                             # 超时时间
+      retries: 3                               # 重试次数
+
+  # ===========================================
+  # Prometheus - 时序数据库和监控系统
+  # 用途：指标收集存储、告警规则管理、性能监控、容量规划、SLA监控
+  # 特性：多维数据模型、PromQL查询语言、拉取模式、服务发现、告警集成
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:v2.47.0             # Prometheus官方镜像，最新稳定版
+    container_name: oj-prometheus              # 容器名称
+    restart: unless-stopped                    # 重启策略：确保监控数据连续性
+    ports:                                     # 端口映射
+      - "9090:9090"                           # Web UI和API端口，用于查询和管理
+    environment:                              # 环境变量
+      TZ: Asia/Shanghai                        # 时区设置，确保监控时间准确
+    volumes:                                  # 配置和数据挂载
+      - prometheus_data:/prometheus            # 时序数据持久化存储
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro  # 主配置文件（只读）
+      - ./docker/prometheus/rules:/etc/prometheus/rules:ro                   # 告警规则目录（只读）
+    command:                                  # 启动参数配置
+      - '--config.file=/etc/prometheus/prometheus.yml'      # 配置文件路径
+      - '--storage.tsdb.path=/prometheus'                   # 数据存储路径
+      - '--web.console.libraries=/etc/prometheus/console_libraries'  # 控制台库路径
+      - '--web.console.templates=/etc/prometheus/consoles'  # 控制台模板路径
+      - '--storage.tsdb.retention.time=30d'                 # 数据保留时间（30天）
+      - '--web.enable-lifecycle'                            # 启用生命周期API（热重载配置）
+      - '--web.enable-admin-api'                            # 启用管理API
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.60             # 固定IP地址
+    healthcheck:                              # 健康检查
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]  # 检查健康端点
+      interval: 30s                           # 检查间隔
+      timeout: 10s                            # 超时时间
+      retries: 3                              # 重试次数
+
+  # ===========================================
+  # Grafana - 数据可视化和仪表板平台
+  # 用途：监控仪表板、数据可视化、告警通知、团队协作、报表生成
+  # 特性：丰富图表类型、多数据源支持、告警规则、用户权限管理、插件生态
+  # ===========================================
+  grafana:
+    image: grafana/grafana:10.1.0              # Grafana官方镜像，功能完整的可视化平台
+    container_name: oj-grafana                 # 容器名称
+    restart: unless-stopped                    # 重启策略：确保监控面板始终可用
+    depends_on:                                # 服务依赖
+      - prometheus                             # 依赖Prometheus作为主要数据源
+    ports:                                     # 端口映射
+      - "3000:3000"                           # Web界面端口，用户访问仪表板
+    environment:                              # 环境变量配置
+      GF_SECURITY_ADMIN_USER: admin           # 管理员用户名（生产环境建议修改）
+      GF_SECURITY_ADMIN_PASSWORD: oj_grafana_admin  # 管理员密码（生产环境必须修改）
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource  # 自动安装的插件
+      TZ: Asia/Shanghai                        # 时区设置，确保图表时间正确
+    volumes:                                  # 数据和配置挂载
+      - grafana_data:/var/lib/grafana          # 用户数据和配置持久化
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro  # 自动配置目录（数据源、仪表板）
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro  # 预制仪表板目录
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.61             # 固定IP地址
+    healthcheck:                              # 健康检查
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]  # 检查API健康状态
+      interval: 30s                           # 检查间隔
+      timeout: 10s                            # 超时时间
+      retries: 3                              # 重试次数
+      start_period: 60s                       # 启动等待时间
+
+  # ===========================================
+  # Kafka UI - Kafka集群管理界面
+  # 用途：主题管理、消息浏览、消费者监控、集群状态查看、配置管理
+  # 特性：直观界面、实时监控、消息搜索、性能统计、多集群支持
+  # ===========================================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest       # 社区维护的Kafka管理界面，功能丰富易用
+    container_name: oj-kafka-ui                # 容器名称
+    restart: unless-stopped                    # 重启策略：确保管理界面可用性
+    depends_on:                                # 服务依赖
+      kafka:
+        condition: service_healthy             # 等待Kafka健康后启动
+    ports:                                     # 端口映射
+      - "8080:8080"                           # Web界面端口，开发者访问入口
+    environment:                              # 连接配置
+      KAFKA_CLUSTERS_0_NAME: oj-cluster       # 集群显示名称，便于识别
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092  # Kafka Broker连接地址
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181     # Zookeeper连接地址，获取集群元数据
+      TZ: Asia/Shanghai                        # 时区设置
+    networks:
+      oj-network:
+        ipv4_address: 172.20.0.32             # 固定IP地址，与Kafka在同一网段

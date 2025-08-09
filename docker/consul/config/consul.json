@@ -1,0 +1,38 @@
+{
+  "datacenter": "oj-datacenter",
+  "data_dir": "/consul/data",
+  "log_level": "INFO",
+  "node_name": "oj-consul-server",
+  "bind_addr": "0.0.0.0",
+  "client_addr": "0.0.0.0",
+  "retry_join": ["127.0.0.1"],
+  "server": true,
+  "bootstrap_expect": 1,
+  "ui_config": {
+    "enabled": true
+  },
+  "connect": {
+    "enabled": true
+  },
+  "ports": {
+    "grpc": 8502
+  },
+  "services": [
+    {
+      "name": "consul",
+      "tags": ["consul", "server"],
+      "port": 8500,
+      "check": {
+        "http": "http://localhost:8500/v1/status/leader",
+        "interval": "10s"
+      }
+    }
+  ],
+  "acl": {
+    "enabled": false,
+    "default_policy": "allow"
+  },
+  "performance": {
+    "raft_multiplier": 1
+  }
+}

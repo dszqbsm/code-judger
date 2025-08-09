@@ -1,0 +1,107 @@
+# Prometheus 配置文件
+# 针对在线判题系统监控优化
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'oj-development'
+    environment: 'dev'
+
+# 告警规则文件
+rule_files:
+  - "rules/*.yml"
+
+# 数据抓取配置
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # Consul 服务发现
+  - job_name: 'consul'
+    static_configs:
+      - targets: ['consul:8500']
+    scrape_interval: 15s
+    metrics_path: /v1/agent/metrics
+    params:
+      format: ['prometheus']
+
+  # MySQL 监控（需要 mysqld_exporter）
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql-exporter:9104']
+    scrape_interval: 15s
+
+  # Redis 监控（需要 redis_exporter）
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 15s
+
+  # Kafka 监控（需要 kafka_exporter）
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+    scrape_interval: 15s
+
+  # Elasticsearch 监控
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+    scrape_interval: 15s
+    metrics_path: /_prometheus/metrics
+
+  # 容器监控（需要 cAdvisor）
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+
+  # 节点监控（需要 node_exporter）
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # 微服务自动发现（通过 Consul）
+  - job_name: 'consul-services'
+    consul_sd_configs:
+      - server: 'consul:8500'
+        datacenter: 'oj-datacenter'
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: service
+      - source_labels: [__meta_consul_node]
+        target_label: node
+      - source_labels: [__meta_consul_tags]
+        target_label: tags
+        regex: '(.+)'
+
+  # 应用程序监控
+  - job_name: 'oj-services'
+    static_configs:
+      - targets: []  # 动态配置，通过服务发现
+    consul_sd_configs:
+      - server: 'consul:8500'
+        services: ['user-api', 'problem-api', 'judge-api', 'submit-api']
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: service_name
+      - source_labels: [__meta_consul_service_address]
+        target_label: __address__
+      - source_labels: [__meta_consul_service_port]
+        target_label: __address__
+        regex: '(.+)'
+        replacement: '${1}:${__meta_consul_service_port}'
+
+# 远程写入配置（可选）
+# remote_write:
+#   - url: "http://remote-storage:9201/write"
+
+# 远程读取配置（可选）
+# remote_read:
+#   - url: "http://remote-storage:9201/read"
