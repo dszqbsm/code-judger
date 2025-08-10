@@ -1,0 +1,65 @@
+Name: user-api
+Host: 0.0.0.0
+Port: 8888
+Mode: dev
+
+# MySQL数据库配置
+DataSource: oj_user:oj_password@tcp(localhost:3306)/oj_users?charset=utf8mb4&parseTime=true&loc=Local
+
+# Redis配置
+RedisConf:
+  Host: localhost:6379
+  Type: node
+  Pass: ""
+
+# JWT认证配置
+Auth:
+  AccessSecret: "oj-access-secret-key-2024"
+  AccessExpire: 3600    # 1小时
+  RefreshSecret: "oj-refresh-secret-key-2024"
+  RefreshExpire: 604800 # 7天
+
+# 日志配置
+Log:
+  ServiceName: user-api
+  Mode: console
+  Level: info
+  Encoding: json
+
+# 服务注册到Consul (可选)
+Consul:
+  Host: localhost:8500
+  Key: user-api
+
+# Kafka配置 (异步消息)
+KafkaConf:
+  Brokers:
+    - localhost:9094
+  Topic: user-events
+
+# 业务配置
+Business:
+  # 密码策略
+  PasswordPolicy:
+    MinLength: 8
+    RequireUppercase: true
+    RequireLowercase: true
+    RequireNumbers: true
+    RequireSpecialChars: false
+  
+  # 登录安全
+  LoginSecurity:
+    MaxFailedAttempts: 5
+    LockoutDuration: 300 # 5分钟
+    SessionTimeout: 86400 # 24小时
+  
+  # 注册配置
+  Registration:
+    EnableRegistration: true
+    RequireEmailVerification: false
+    DefaultRole: "student"
+  
+  # 分页配置
+  Pagination:
+    DefaultPageSize: 20
+    MaxPageSize: 100
