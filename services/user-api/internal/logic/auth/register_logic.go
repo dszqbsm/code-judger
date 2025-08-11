@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -155,7 +157,7 @@ func (l *RegisterLogic) Register(req *usertypes.RegisterReq) (resp *usertypes.Re
 
 	// 10. 构造响应
 	userInfo := l.buildUserInfo(user)
-	
+
 	return &usertypes.RegisterResp{
 		BaseResp: usertypes.BaseResp{
 			Code:    utils.CodeSuccess,
@@ -196,7 +198,7 @@ func (l *RegisterLogic) validateRegisterRequest(req *usertypes.RegisterReq) erro
 // validatePassword 验证密码强度
 func (l *RegisterLogic) validatePassword(password string) error {
 	policy := l.svcCtx.Config.Business.PasswordPolicy
-	
+
 	if len(password) < policy.MinLength {
 		return fmt.Errorf("密码长度至少%d个字符", policy.MinLength)
 	}
@@ -232,18 +234,18 @@ func (l *RegisterLogic) getValidRole(role string) string {
 // buildUserInfo 构建用户信息响应
 func (l *RegisterLogic) buildUserInfo(user *types.User) usertypes.UserInfo {
 	return usertypes.UserInfo{
-		UserId:       user.ID,
-		Username:     user.Username,
-		Email:        user.Email,
-		RealName:     user.RealName,
-		AvatarUrl:    user.AvatarUrl,
-		Bio:          user.Bio,
-		Role:         user.Role,
-		Status:       user.Status,
+		UserId:        user.ID,
+		Username:      user.Username,
+		Email:         user.Email,
+		RealName:      user.RealName,
+		AvatarUrl:     user.AvatarUrl,
+		Bio:           user.Bio,
+		Role:          user.Role,
+		Status:        user.Status,
 		EmailVerified: user.EmailVerified,
-		LoginCount:   user.LoginCount,
-		LastLoginAt:  formatTime(user.LastLoginAt),
-		CreatedAt:    user.CreatedAt.Format(time.RFC3339),
+		LoginCount:    user.LoginCount,
+		LastLoginAt:   formatTime(user.LastLoginAt),
+		CreatedAt:     user.CreatedAt.Format(time.RFC3339),
 	}
 }
 

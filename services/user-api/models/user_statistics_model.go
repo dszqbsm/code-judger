@@ -56,7 +56,7 @@ func newUserStatisticsModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.
 // Insert 插入用户统计记录
 func (m *defaultUserStatisticsModel) Insert(ctx context.Context, data *types.UserStatistics) (sql.Result, error) {
 	query := fmt.Sprintf("INSERT INTO %s (`user_id`, `current_rating`, `max_rating`, `rank_level`) VALUES (?, ?, ?, ?)", m.table)
-	return m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
+	return m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
 		return conn.ExecCtx(ctx, query, data.UserID, data.CurrentRating, data.MaxRating, data.RankLevel)
 	})
 }
@@ -65,7 +65,7 @@ func (m *defaultUserStatisticsModel) Insert(ctx context.Context, data *types.Use
 func (m *defaultUserStatisticsModel) FindOne(ctx context.Context, id int64) (*types.UserStatistics, error) {
 	userStatsIdKey := fmt.Sprintf("%s%v", cacheUserStatsIdPrefix, id)
 	var resp types.UserStatistics
-	err := m.QueryRowCtx(ctx, &resp, userStatsIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
+	err := m.CachedConn.QueryRowCtx(ctx, &resp, userStatsIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `id` = ? LIMIT 1", userStatsRows, m.table)
 		return conn.QueryRowCtx(ctx, v, query, id)
 	})
@@ -83,8 +83,8 @@ func (m *defaultUserStatisticsModel) FindOne(ctx context.Context, id int64) (*ty
 func (m *defaultUserStatisticsModel) Update(ctx context.Context, newData *types.UserStatistics) error {
 	userStatsIdKey := fmt.Sprintf("%s%v", cacheUserStatsIdPrefix, newData.ID)
 	userStatsUserIdKey := fmt.Sprintf("%s%v", cacheUserStatsUserIdPrefix, newData.UserID)
-	
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("UPDATE %s SET `total_submissions` = ?, `accepted_submissions` = ?, `solved_problems` = ?, `current_rating` = ?, `max_rating` = ?, `rank_level` = ? WHERE `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, newData.TotalSubmissions, newData.AcceptedSubmissions, newData.SolvedProblems, newData.CurrentRating, newData.MaxRating, newData.RankLevel, newData.ID)
 	}, userStatsIdKey, userStatsUserIdKey)
@@ -100,8 +100,8 @@ func (m *defaultUserStatisticsModel) Delete(ctx context.Context, id int64) error
 
 	userStatsIdKey := fmt.Sprintf("%s%v", cacheUserStatsIdPrefix, id)
 	userStatsUserIdKey := fmt.Sprintf("%s%v", cacheUserStatsUserIdPrefix, data.UserID)
-	
-	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+
+	_, err = m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("DELETE FROM %s WHERE `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, id)
 	}, userStatsIdKey, userStatsUserIdKey)
@@ -114,7 +114,7 @@ func (m *defaultUserStatisticsModel) Delete(ctx context.Context, id int64) error
 func (m *customUserStatisticsModel) FindByUserID(ctx context.Context, userID int64) (*types.UserStatistics, error) {
 	userStatsUserIdKey := fmt.Sprintf("%s%v", cacheUserStatsUserIdPrefix, userID)
 	var resp types.UserStatistics
-	err := m.QueryRowIndexCtx(ctx, &resp, userStatsUserIdKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
+	err := m.CachedConn.QueryRowIndexCtx(ctx, &resp, userStatsUserIdKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `user_id` = ? LIMIT 1", userStatsRows, m.table)
 		if err := conn.QueryRowCtx(ctx, &resp, query, userID); err != nil {
 			return nil, err
@@ -135,7 +135,7 @@ func (m *customUserStatisticsModel) FindByUserID(ctx context.Context, userID int
 func (m *customUserStatisticsModel) UpdateStats(ctx context.Context, userID int64, stats *types.UserStatistics) error {
 	userStatsUserIdKey := fmt.Sprintf("%s%v", cacheUserStatsUserIdPrefix, userID)
 	query := fmt.Sprintf("UPDATE %s SET `total_submissions` = ?, `accepted_submissions` = ?, `solved_problems` = ? WHERE `user_id` = ?", m.table)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		return conn.ExecCtx(ctx, query, stats.TotalSubmissions, stats.AcceptedSubmissions, stats.SolvedProblems, userID)
 	}, userStatsUserIdKey)
 	return err

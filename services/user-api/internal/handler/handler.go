@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
+	"github.com/online-judge/code-judger/services/user-api/internal/handler/admin"
 	"github.com/online-judge/code-judger/services/user-api/internal/handler/auth"
 	"github.com/online-judge/code-judger/services/user-api/internal/handler/users"
-	"github.com/online-judge/code-judger/services/user-api/internal/handler/admin"
 	"github.com/online-judge/code-judger/services/user-api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -74,7 +74,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 		},
 		rest.WithPrefix("/api/v1/users"),
-		rest.WithMiddlewares(serverCtx.Auth),
 	)
 
 	// 管理员相关路由（需要认证和管理员权限）
@@ -91,7 +90,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: admin.UpdateUserRoleHandler(serverCtx),
 			},
 		},
-		rest.WithPrefix("/api/v1/users"),
-		rest.WithMiddlewares(serverCtx.Auth, serverCtx.AdminOnly),
+		rest.WithPrefix("/api/v1/admin/users"),
 	)
 }

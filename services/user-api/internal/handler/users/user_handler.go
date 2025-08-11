@@ -2,6 +2,7 @@ package users
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/online-judge/code-judger/common/utils"
 	"github.com/online-judge/code-judger/services/user-api/internal/middleware"
@@ -20,18 +21,18 @@ func GetProfileHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 
 		userInfo := types.UserInfo{
-			UserId:       user.ID,
-			Username:     user.Username,
-			Email:        user.Email,
-			RealName:     user.RealName,
-			AvatarUrl:    user.AvatarUrl,
-			Bio:          user.Bio,
-			Role:         user.Role,
-			Status:       user.Status,
+			UserId:        user.ID,
+			Username:      user.Username,
+			Email:         user.Email,
+			RealName:      user.RealName,
+			AvatarUrl:     user.AvatarUrl,
+			Bio:           user.Bio,
+			Role:          user.Role,
+			Status:        user.Status,
 			EmailVerified: user.EmailVerified,
-			LoginCount:   user.LoginCount,
-			LastLoginAt:  formatTimePtr(user.LastLoginAt),
-			CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			LoginCount:    user.LoginCount,
+			LastLoginAt:   formatTimePtr(user.LastLoginAt),
+			CreatedAt:     user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 
 		resp := types.UserProfileResp{

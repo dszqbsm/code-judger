@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/online-judge/code-judger/common/types"
@@ -155,18 +153,18 @@ func (l *LoginLogic) Login(req *usertypes.LoginReq) (resp *usertypes.LoginResp, 
 
 func buildUserInfo(user *types.User) usertypes.UserInfo {
 	return usertypes.UserInfo{
-		UserId:       user.ID,
-		Username:     user.Username,
-		Email:        user.Email,
-		RealName:     user.RealName,
-		AvatarUrl:    user.AvatarUrl,
-		Bio:          user.Bio,
-		Role:         user.Role,
-		Status:       user.Status,
+		UserId:        user.ID,
+		Username:      user.Username,
+		Email:         user.Email,
+		RealName:      user.RealName,
+		AvatarUrl:     user.AvatarUrl,
+		Bio:           user.Bio,
+		Role:          user.Role,
+		Status:        user.Status,
 		EmailVerified: user.EmailVerified,
-		LoginCount:   user.LoginCount,
-		LastLoginAt:  formatTimePtr(user.LastLoginAt),
-		CreatedAt:    user.CreatedAt.Format(time.RFC3339),
+		LoginCount:    user.LoginCount,
+		LastLoginAt:   formatTimePtr(user.LastLoginAt),
+		CreatedAt:     user.CreatedAt.Format(time.RFC3339),
 	}
 }
 

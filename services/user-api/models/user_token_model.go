@@ -61,7 +61,7 @@ func newUserTokenModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Optio
 // Insert 插入令牌记录
 func (m *defaultUserTokenModel) Insert(ctx context.Context, data *types.UserToken) (sql.Result, error) {
 	query := fmt.Sprintf("INSERT INTO %s (`user_id`, `token_id`, `refresh_token`, `access_token_expire`, `refresh_token_expire`, `client_info`) VALUES (?, ?, ?, ?, ?, ?)", m.table)
-	return m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
+	return m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
 		return conn.ExecCtx(ctx, query, data.UserID, data.TokenID, data.RefreshToken, data.AccessTokenExpire, data.RefreshTokenExpire, data.ClientInfo)
 	})
 }
@@ -70,7 +70,7 @@ func (m *defaultUserTokenModel) Insert(ctx context.Context, data *types.UserToke
 func (m *defaultUserTokenModel) FindOne(ctx context.Context, id int64) (*types.UserToken, error) {
 	tokenIdKey := fmt.Sprintf("%s%v", cacheUserTokenIdPrefix, id)
 	var resp types.UserToken
-	err := m.QueryRowCtx(ctx, &resp, tokenIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
+	err := m.CachedConn.QueryRowCtx(ctx, &resp, tokenIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `id` = ? LIMIT 1", userTokenRows, m.table)
 		return conn.QueryRowCtx(ctx, v, query, id)
 	})
@@ -88,8 +88,8 @@ func (m *defaultUserTokenModel) FindOne(ctx context.Context, id int64) (*types.U
 func (m *defaultUserTokenModel) Update(ctx context.Context, newData *types.UserToken) error {
 	tokenIdKey := fmt.Sprintf("%s%v", cacheUserTokenIdPrefix, newData.ID)
 	tokenKey := fmt.Sprintf("%s%v", cacheUserTokenTokenIdPrefix, newData.TokenID)
-	
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("UPDATE %s SET `user_id` = ?, `token_id` = ?, `refresh_token` = ?, `access_token_expire` = ?, `refresh_token_expire` = ?, `client_info` = ?, `is_revoked` = ?, `updated_at` = ? WHERE `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, newData.UserID, newData.TokenID, newData.RefreshToken, newData.AccessTokenExpire, newData.RefreshTokenExpire, newData.ClientInfo, newData.IsRevoked, time.Now(), newData.ID)
 	}, tokenIdKey, tokenKey)
@@ -105,8 +105,8 @@ func (m *defaultUserTokenModel) Delete(ctx context.Context, id int64) error {
 
 	tokenIdKey := fmt.Sprintf("%s%v", cacheUserTokenIdPrefix, id)
 	tokenKey := fmt.Sprintf("%s%v", cacheUserTokenTokenIdPrefix, data.TokenID)
-	
-	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+
+	_, err = m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("DELETE FROM %s WHERE `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, id)
 	}, tokenIdKey, tokenKey)
@@ -119,7 +119,7 @@ func (m *defaultUserTokenModel) Delete(ctx context.Context, id int64) error {
 func (m *customUserTokenModel) FindByTokenID(ctx context.Context, tokenID string) (*types.UserToken, error) {
 	tokenKey := fmt.Sprintf("%s%v", cacheUserTokenTokenIdPrefix, tokenID)
 	var resp types.UserToken
-	err := m.QueryRowIndexCtx(ctx, &resp, tokenKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
+	err := m.CachedConn.QueryRowIndexCtx(ctx, &resp, tokenKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `token_id` = ? AND `is_revoked` = false AND `refresh_token_expire` > ? LIMIT 1", userTokenRows, m.table)
 		if err := conn.QueryRowCtx(ctx, &resp, query, tokenID, time.Now()); err != nil {
 			return nil, err
@@ -140,7 +140,7 @@ func (m *customUserTokenModel) FindByTokenID(ctx context.Context, tokenID string
 func (m *customUserTokenModel) FindByUserID(ctx context.Context, userID int64) ([]*types.UserToken, error) {
 	var tokens []*types.UserToken
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE `user_id` = ? AND `is_revoked` = false ORDER BY `created_at` DESC", userTokenRows, m.table)
-	err := m.QueryRowsNoCacheCtx(ctx, &tokens, query, userID)
+	err := m.CachedConn.QueryRowsNoCacheCtx(ctx, &tokens, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (m *customUserTokenModel) FindByUserID(ctx context.Context, userID int64) (
 func (m *customUserTokenModel) RevokeToken(ctx context.Context, tokenID string) error {
 	tokenKey := fmt.Sprintf("%s%v", cacheUserTokenTokenIdPrefix, tokenID)
 	query := fmt.Sprintf("UPDATE %s SET `is_revoked` = true, `updated_at` = ? WHERE `token_id` = ?", m.table)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		return conn.ExecCtx(ctx, query, time.Now(), tokenID)
 	}, tokenKey)
 	return err
@@ -160,14 +160,14 @@ func (m *customUserTokenModel) RevokeToken(ctx context.Context, tokenID string) 
 // RevokeUserTokens 撤销用户所有令牌
 func (m *customUserTokenModel) RevokeUserTokens(ctx context.Context, userID int64) error {
 	query := fmt.Sprintf("UPDATE %s SET `is_revoked` = true, `updated_at` = ? WHERE `user_id` = ? AND `is_revoked` = false", m.table)
-	_, err := m.ExecNoCacheCtx(ctx, query, time.Now(), userID)
+	_, err := m.CachedConn.ExecNoCacheCtx(ctx, query, time.Now(), userID)
 	return err
 }
 
 // CleanExpiredTokens 清理过期令牌
 func (m *customUserTokenModel) CleanExpiredTokens(ctx context.Context) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE `refresh_token_expire` < ?", m.table)
-	_, err := m.ExecNoCacheCtx(ctx, query, time.Now())
+	_, err := m.CachedConn.ExecNoCacheCtx(ctx, query, time.Now())
 	return err
 }
 
@@ -175,7 +175,7 @@ func (m *customUserTokenModel) CleanExpiredTokens(ctx context.Context) error {
 func (m *customUserTokenModel) IsTokenRevoked(ctx context.Context, tokenID string) (bool, error) {
 	var isRevoked bool
 	query := fmt.Sprintf("SELECT `is_revoked` FROM %s WHERE `token_id` = ? LIMIT 1", m.table)
-	err := m.QueryRowNoCacheCtx(ctx, &isRevoked, query, tokenID)
+	err := m.CachedConn.QueryRowNoCacheCtx(ctx, &isRevoked, query, tokenID)
 	if err == sqlc.ErrNotFound {
 		return true, nil // 令牌不存在视为已撤销
 	}

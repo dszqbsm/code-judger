@@ -3,8 +3,8 @@ package svc
 import (
 	"github.com/online-judge/code-judger/common/utils"
 	"github.com/online-judge/code-judger/services/user-api/internal/config"
-	"github.com/online-judge/code-judger/services/user-api/internal/middleware"
 	"github.com/online-judge/code-judger/services/user-api/models"
+	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
@@ -12,22 +12,22 @@ import (
 
 type ServiceContext struct {
 	Config config.Config
-	
+
 	// 数据库连接
 	DB sqlx.SqlConn
-	
+
 	// Redis连接
 	RedisClient *redis.Redis
-	
+
 	// 数据模型
-	UserModel      models.UserModel
-	UserTokenModel models.UserTokenModel
-	UserStatsModel models.UserStatisticsModel
+	UserModel         models.UserModel
+	UserTokenModel    models.UserTokenModel
+	UserStatsModel    models.UserStatisticsModel
 	UserLoginLogModel models.UserLoginLogModel
-	
+
 	// JWT管理器
 	JWTManager *utils.JWTManager
-	
+
 	// 中间件
 	Auth      rest.Middleware
 	AdminOnly rest.Middleware
@@ -36,10 +36,10 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	// 初始化数据库连接
 	db := sqlx.NewMysql(c.DataSource)
-	
+
 	// 初始化Redis连接
 	rds := redis.MustNewRedis(c.RedisConf)
-	
+
 	// 初始化JWT管理器
 	jwtManager := utils.NewJWTManager(
 		c.Auth.AccessSecret,
@@ -47,27 +47,31 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		c.Auth.AccessExpire,
 		c.Auth.RefreshExpire,
 	)
-	
+
 	// 初始化数据模型
-	userModel := models.NewUserModel(db, c.CacheRedis)
-	userTokenModel := models.NewUserTokenModel(db, c.CacheRedis)
-	userStatsModel := models.NewUserStatisticsModel(db, c.CacheRedis)
-	userLoginLogModel := models.NewUserLoginLogModel(db, c.CacheRedis)
-	
+	// 配置Redis缓存
+	cacheConf := cache.CacheConf{
+		{
+			RedisConf: c.RedisConf,
+			Weight:    100,
+		},
+	}
+	userModel := models.NewUserModel(db, cacheConf)
+	userTokenModel := models.NewUserTokenModel(db, cacheConf)
+	userStatsModel := models.NewUserStatisticsModel(db, cacheConf)
+	userLoginLogModel := models.NewUserLoginLogModel(db, cacheConf)
+
 	svcCtx := &ServiceContext{
 		Config:            c,
-		DB:               db,
-		RedisClient:      rds,
-		UserModel:        userModel,
-		UserTokenModel:   userTokenModel,
-		UserStatsModel:   userStatsModel,
+		DB:                db,
+		RedisClient:       rds,
+		UserModel:         userModel,
+		UserTokenModel:    userTokenModel,
+		UserStatsModel:    userStatsModel,
 		UserLoginLogModel: userLoginLogModel,
-		JWTManager:       jwtManager,
+		JWTManager:        jwtManager,
 	}
-	
-	// 初始化中间件
-	svcCtx.Auth = middleware.NewAuthMiddleware(svcCtx).Handle
-	svcCtx.AdminOnly = middleware.NewAdminOnlyMiddleware().Handle
-	
+
+	// 中间件将在main.go中单独初始化，避免循环引用
 	return svcCtx
 }

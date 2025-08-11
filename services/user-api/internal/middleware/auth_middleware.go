@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/online-judge/code-judger/common/types"
 	"github.com/online-judge/code-judger/common/utils"
 	"github.com/online-judge/code-judger/services/user-api/internal/svc"
 )
@@ -79,7 +80,7 @@ func (m *AuthMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// 将用户信息添加到上下文
 		ctx := context.WithValue(r.Context(), "user", user)
 		ctx = context.WithValue(ctx, "claims", claims)
-		
+
 		next(w, r.WithContext(ctx))
 	}
 }

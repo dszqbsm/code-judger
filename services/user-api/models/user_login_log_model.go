@@ -55,7 +55,7 @@ func newUserLoginLogModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Op
 // Insert 插入登录日志记录
 func (m *defaultUserLoginLogModel) Insert(ctx context.Context, data *types.UserLoginLog) (sql.Result, error) {
 	query := fmt.Sprintf("INSERT INTO %s (`user_id`, `login_type`, `ip_address`, `user_agent`, `login_status`, `failure_reason`, `location_info`, `device_info`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", m.table)
-	return m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
+	return m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
 		return conn.ExecCtx(ctx, query, data.UserID, data.LoginType, data.IPAddress, data.UserAgent, data.LoginStatus, data.FailureReason, data.LocationInfo, data.DeviceInfo)
 	})
 }
@@ -64,7 +64,7 @@ func (m *defaultUserLoginLogModel) Insert(ctx context.Context, data *types.UserL
 func (m *defaultUserLoginLogModel) FindOne(ctx context.Context, id int64) (*types.UserLoginLog, error) {
 	loginLogIdKey := fmt.Sprintf("%s%v", cacheLoginLogIdPrefix, id)
 	var resp types.UserLoginLog
-	err := m.QueryRowCtx(ctx, &resp, loginLogIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
+	err := m.CachedConn.QueryRowCtx(ctx, &resp, loginLogIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `id` = ? LIMIT 1", loginLogRows, m.table)
 		return conn.QueryRowCtx(ctx, v, query, id)
 	})
@@ -81,7 +81,7 @@ func (m *defaultUserLoginLogModel) FindOne(ctx context.Context, id int64) (*type
 // Delete 删除登录日志
 func (m *defaultUserLoginLogModel) Delete(ctx context.Context, id int64) error {
 	loginLogIdKey := fmt.Sprintf("%s%v", cacheLoginLogIdPrefix, id)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("DELETE FROM %s WHERE `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, id)
 	}, loginLogIdKey)
@@ -94,7 +94,7 @@ func (m *defaultUserLoginLogModel) Delete(ctx context.Context, id int64) error {
 func (m *customUserLoginLogModel) FindByUserID(ctx context.Context, userID int64, limit int64) ([]*types.UserLoginLog, error) {
 	var logs []*types.UserLoginLog
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE `user_id` = ? ORDER BY `created_at` DESC LIMIT ?", loginLogRows, m.table)
-	err := m.QueryRowsNoCacheCtx(ctx, &logs, query, userID, limit)
+	err := m.CachedConn.QueryRowsNoCacheCtx(ctx, &logs, query, userID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (m *customUserLoginLogModel) FindByUserID(ctx context.Context, userID int64
 func (m *customUserLoginLogModel) GetRecentLoginsByIP(ctx context.Context, ip string, limit int64) ([]*types.UserLoginLog, error) {
 	var logs []*types.UserLoginLog
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE `ip_address` = ? ORDER BY `created_at` DESC LIMIT ?", loginLogRows, m.table)
-	err := m.QueryRowsNoCacheCtx(ctx, &logs, query, ip, limit)
+	err := m.CachedConn.QueryRowsNoCacheCtx(ctx, &logs, query, ip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -115,5 +115,5 @@ func (m *customUserLoginLogModel) GetRecentLoginsByIP(ctx context.Context, ip st
 // 常量定义
 var (
 	cacheLoginLogIdPrefix = "cache:login_log:id:"
-	loginLogRows         = "`id`, `user_id`, `login_type`, `ip_address`, `user_agent`, `login_status`, `failure_reason`, `location_info`, `device_info`, `created_at`"
+	loginLogRows          = "`id`, `user_id`, `login_type`, `ip_address`, `user_agent`, `login_status`, `failure_reason`, `location_info`, `device_info`, `created_at`"
 )

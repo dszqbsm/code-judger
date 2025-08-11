@@ -69,7 +69,7 @@ func newUserModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Option) *d
 // Insert 插入用户记录
 func (m *defaultUserModel) Insert(ctx context.Context, data *types.User) (sql.Result, error) {
 	query := fmt.Sprintf("INSERT INTO %s (`username`, `email`, `password_hash`, `real_name`, `avatar_url`, `bio`, `role`, `status`, `email_verified`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table)
-	return m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
+	return m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (sql.Result, error) {
 		return conn.ExecCtx(ctx, query, data.Username, data.Email, data.PasswordHash, data.RealName, data.AvatarUrl, data.Bio, data.Role, data.Status, data.EmailVerified)
 	})
 }
@@ -78,7 +78,7 @@ func (m *defaultUserModel) Insert(ctx context.Context, data *types.User) (sql.Re
 func (m *defaultUserModel) FindOne(ctx context.Context, id int64) (*types.User, error) {
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, id)
 	var resp types.User
-	err := m.QueryRowCtx(ctx, &resp, userIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
+	err := m.CachedConn.QueryRowCtx(ctx, &resp, userIdKey, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) error {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `id` = ? LIMIT 1", userRows, m.table)
 		return conn.QueryRowCtx(ctx, v, query, id)
 	})
@@ -96,7 +96,7 @@ func (m *defaultUserModel) FindOne(ctx context.Context, id int64) (*types.User, 
 func (m *defaultUserModel) FindOneByUsername(ctx context.Context, username string) (*types.User, error) {
 	usernameKey := fmt.Sprintf("%s%v", cacheUserUsernamePrefix, username)
 	var resp types.User
-	err := m.QueryRowIndexCtx(ctx, &resp, usernameKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
+	err := m.CachedConn.QueryRowIndexCtx(ctx, &resp, usernameKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `username` = ? LIMIT 1", userRows, m.table)
 		if err := conn.QueryRowCtx(ctx, &resp, query, username); err != nil {
 			return nil, err
@@ -117,7 +117,7 @@ func (m *defaultUserModel) FindOneByUsername(ctx context.Context, username strin
 func (m *defaultUserModel) FindOneByEmail(ctx context.Context, email string) (*types.User, error) {
 	emailKey := fmt.Sprintf("%s%v", cacheUserEmailPrefix, email)
 	var resp types.User
-	err := m.QueryRowIndexCtx(ctx, &resp, emailKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
+	err := m.CachedConn.QueryRowIndexCtx(ctx, &resp, emailKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v interface{}) (i interface{}, e error) {
 		query := fmt.Sprintf("SELECT %s FROM %s WHERE `email` = ? LIMIT 1", userRows, m.table)
 		if err := conn.QueryRowCtx(ctx, &resp, query, email); err != nil {
 			return nil, err
@@ -139,8 +139,8 @@ func (m *defaultUserModel) Update(ctx context.Context, newData *types.User) erro
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, newData.ID)
 	usernameKey := fmt.Sprintf("%s%v", cacheUserUsernamePrefix, newData.Username)
 	emailKey := fmt.Sprintf("%s%v", cacheUserEmailPrefix, newData.Email)
-	
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("UPDATE %s SET `username` = ?, `email` = ?, `password_hash` = ?, `real_name` = ?, `avatar_url` = ?, `bio` = ?, `role` = ?, `status` = ?, `email_verified` = ?, `last_login_at` = ?, `last_login_ip` = ?, `login_count` = ?, `updated_at` = ? WHERE `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, newData.Username, newData.Email, newData.PasswordHash, newData.RealName, newData.AvatarUrl, newData.Bio, newData.Role, newData.Status, newData.EmailVerified, newData.LastLoginAt, newData.LastLoginIP, newData.LoginCount, time.Now(), newData.ID)
 	}, userIdKey, usernameKey, emailKey)
@@ -157,8 +157,8 @@ func (m *defaultUserModel) Delete(ctx context.Context, id int64) error {
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, id)
 	usernameKey := fmt.Sprintf("%s%v", cacheUserUsernamePrefix, data.Username)
 	emailKey := fmt.Sprintf("%s%v", cacheUserEmailPrefix, data.Email)
-	
-	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+
+	_, err = m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("DELETE FROM %s WHERE `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, id)
 	}, userIdKey, usernameKey, emailKey)
@@ -181,7 +181,7 @@ func (m *customUserModel) FindByEmail(ctx context.Context, email string) (*types
 func (m *customUserModel) FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*types.User, error) {
 	var resp types.User
 	query := fmt.Sprintf("SELECT %s FROM %s WHERE `username` = ? OR `email` = ? LIMIT 1", userRows, m.table)
-	err := m.QueryRowNoCacheCtx(ctx, &resp, query, usernameOrEmail, usernameOrEmail)
+	err := m.CachedConn.QueryRowNoCacheCtx(ctx, &resp, query, usernameOrEmail, usernameOrEmail)
 	switch err {
 	case nil:
 		return &resp, nil
@@ -196,7 +196,7 @@ func (m *customUserModel) FindByUsernameOrEmail(ctx context.Context, usernameOrE
 func (m *customUserModel) UpdateLastLogin(ctx context.Context, userID int64, ip string) error {
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, userID)
 	query := fmt.Sprintf("UPDATE %s SET `last_login_at` = ?, `last_login_ip` = ?, `login_count` = `login_count` + 1, `updated_at` = ? WHERE `id` = ?", m.table)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		return conn.ExecCtx(ctx, query, time.Now(), ip, time.Now(), userID)
 	}, userIdKey)
 	return err
@@ -206,7 +206,7 @@ func (m *customUserModel) UpdateLastLogin(ctx context.Context, userID int64, ip 
 func (m *customUserModel) UpdateLoginCount(ctx context.Context, userID int64) error {
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, userID)
 	query := fmt.Sprintf("UPDATE %s SET `login_count` = `login_count` + 1, `updated_at` = ? WHERE `id` = ?", m.table)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		return conn.ExecCtx(ctx, query, time.Now(), userID)
 	}, userIdKey)
 	return err
@@ -221,12 +221,12 @@ func (m *customUserModel) GetUserList(ctx context.Context, page, pageSize int64,
 		whereClause = append(whereClause, "`role` = ?")
 		args = append(args, role)
 	}
-	
+
 	if status != "" {
 		whereClause = append(whereClause, "`status` = ?")
 		args = append(args, status)
 	}
-	
+
 	if keyword != "" {
 		whereClause = append(whereClause, "(`username` LIKE ? OR `email` LIKE ? OR `real_name` LIKE ?)")
 		searchKeyword := "%" + keyword + "%"
@@ -241,7 +241,7 @@ func (m *customUserModel) GetUserList(ctx context.Context, page, pageSize int64,
 	// 查询总数
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s %s", m.table, whereSQL)
 	var total int64
-	err := m.QueryRowNoCacheCtx(ctx, &total, countQuery, args...)
+	err := m.CachedConn.QueryRowNoCacheCtx(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -250,9 +250,9 @@ func (m *customUserModel) GetUserList(ctx context.Context, page, pageSize int64,
 	offset := (page - 1) * pageSize
 	listQuery := fmt.Sprintf("SELECT %s FROM %s %s ORDER BY `created_at` DESC LIMIT ? OFFSET ?", userRows, m.table, whereSQL)
 	listArgs := append(args, pageSize, offset)
-	
+
 	var users []*types.User
-	err = m.QueryRowsNoCacheCtx(ctx, &users, listQuery, listArgs...)
+	err = m.CachedConn.QueryRowsNoCacheCtx(ctx, &users, listQuery, listArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -264,7 +264,7 @@ func (m *customUserModel) GetUserList(ctx context.Context, page, pageSize int64,
 func (m *customUserModel) UpdatePassword(ctx context.Context, userID int64, passwordHash string) error {
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, userID)
 	query := fmt.Sprintf("UPDATE %s SET `password_hash` = ?, `updated_at` = ? WHERE `id` = ?", m.table)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		return conn.ExecCtx(ctx, query, passwordHash, time.Now(), userID)
 	}, userIdKey)
 	return err
@@ -274,7 +274,7 @@ func (m *customUserModel) UpdatePassword(ctx context.Context, userID int64, pass
 func (m *customUserModel) UpdateProfile(ctx context.Context, userID int64, realName, avatarUrl, bio string) error {
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, userID)
 	query := fmt.Sprintf("UPDATE %s SET `real_name` = ?, `avatar_url` = ?, `bio` = ?, `updated_at` = ? WHERE `id` = ?", m.table)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		return conn.ExecCtx(ctx, query, realName, avatarUrl, bio, time.Now(), userID)
 	}, userIdKey)
 	return err
@@ -284,7 +284,7 @@ func (m *customUserModel) UpdateProfile(ctx context.Context, userID int64, realN
 func (m *customUserModel) UpdateRole(ctx context.Context, userID int64, role string) error {
 	userIdKey := fmt.Sprintf("%s%v", cacheUserIdPrefix, userID)
 	query := fmt.Sprintf("UPDATE %s SET `role` = ?, `updated_at` = ? WHERE `id` = ?", m.table)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	_, err := m.CachedConn.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		return conn.ExecCtx(ctx, query, role, time.Now(), userID)
 	}, userIdKey)
 	return err
@@ -294,7 +294,7 @@ func (m *customUserModel) UpdateRole(ctx context.Context, userID int64, role str
 func (m *customUserModel) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
 	var count int64
 	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE `username` = ?", m.table)
-	err := m.QueryRowNoCacheCtx(ctx, &count, query, username)
+	err := m.CachedConn.QueryRowNoCacheCtx(ctx, &count, query, username)
 	if err != nil {
 		return false, err
 	}
@@ -305,7 +305,7 @@ func (m *customUserModel) CheckUsernameExists(ctx context.Context, username stri
 func (m *customUserModel) CheckEmailExists(ctx context.Context, email string) (bool, error) {
 	var count int64
 	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE `email` = ?", m.table)
-	err := m.QueryRowNoCacheCtx(ctx, &count, query, email)
+	err := m.CachedConn.QueryRowNoCacheCtx(ctx, &count, query, email)
 	if err != nil {
 		return false, err
 	}
