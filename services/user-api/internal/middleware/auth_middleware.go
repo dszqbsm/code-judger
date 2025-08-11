@@ -7,16 +7,20 @@ import (
 
 	"github.com/online-judge/code-judger/common/types"
 	"github.com/online-judge/code-judger/common/utils"
-	"github.com/online-judge/code-judger/services/user-api/internal/svc"
+	"github.com/online-judge/code-judger/services/user-api/models"
 )
 
 type AuthMiddleware struct {
-	svcCtx *svc.ServiceContext
+	jwtManager     *utils.JWTManager
+	userModel      models.UserModel
+	userTokenModel models.UserTokenModel
 }
 
-func NewAuthMiddleware(svcCtx *svc.ServiceContext) *AuthMiddleware {
+func NewAuthMiddleware(jwtManager *utils.JWTManager, userModel models.UserModel, userTokenModel models.UserTokenModel) *AuthMiddleware {
 	return &AuthMiddleware{
-		svcCtx: svcCtx,
+		jwtManager:     jwtManager,
+		userModel:      userModel,
+		userTokenModel: userTokenModel,
 	}
 }
 
@@ -43,14 +47,14 @@ func (m *AuthMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// 解析和验证令牌
-		claims, err := m.svcCtx.JWTManager.ParseAccessToken(token)
+		claims, err := m.jwtManager.ParseAccessToken(token)
 		if err != nil {
 			utils.Error(w, utils.CodeInvalidToken, "无效的令牌")
 			return
 		}
 
 		// 检查令牌是否被撤销
-		isRevoked, err := m.svcCtx.UserTokenModel.IsTokenRevoked(r.Context(), claims.TokenID)
+		isRevoked, err := m.userTokenModel.IsTokenRevoked(r.Context(), claims.TokenID)
 		if err != nil {
 			utils.Error(w, utils.CodeInternalError, "验证令牌状态失败")
 			return
@@ -61,7 +65,7 @@ func (m *AuthMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// 获取用户信息
-		user, err := m.svcCtx.UserModel.FindOne(r.Context(), claims.UserID)
+		user, err := m.userModel.FindOne(r.Context(), claims.UserID)
 		if err != nil {
 			utils.Error(w, utils.CodeUserNotFound, "用户不存在")
 			return

@@ -3,6 +3,7 @@ package svc
 import (
 	"github.com/online-judge/code-judger/common/utils"
 	"github.com/online-judge/code-judger/services/user-api/internal/config"
+	"github.com/online-judge/code-judger/services/user-api/internal/middleware"
 	"github.com/online-judge/code-judger/services/user-api/models"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -72,6 +73,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		JWTManager:        jwtManager,
 	}
 
-	// 中间件将在main.go中单独初始化，避免循环引用
+	// 初始化中间件
+	svcCtx.Auth = middleware.NewAuthMiddleware(jwtManager, userModel, userTokenModel).Handle
+	svcCtx.AdminOnly = middleware.NewAdminOnlyMiddleware().Handle
+
 	return svcCtx
 }

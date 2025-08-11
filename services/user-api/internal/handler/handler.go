@@ -12,7 +12,7 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
-	// 认证相关路由
+	// 认证相关路由（公开接口）
 	server.AddRoutes(
 		[]rest.Route{
 			{
@@ -25,20 +25,27 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/login",
 				Handler: auth.LoginHandler(serverCtx),
 			},
+		},
+		rest.WithPrefix("/api/v1/auth"),
+	)
+
+	// 认证相关路由（需要令牌）
+	server.AddRoutes(
+		[]rest.Route{
 			{
 				Method:  http.MethodPost,
 				Path:    "/refresh",
-				Handler: auth.RefreshTokenHandler(serverCtx),
+				Handler: serverCtx.Auth(auth.RefreshTokenHandler(serverCtx)),
 			},
 			{
 				Method:  http.MethodPost,
 				Path:    "/logout",
-				Handler: auth.LogoutHandler(serverCtx),
+				Handler: serverCtx.Auth(auth.LogoutHandler(serverCtx)),
 			},
 			{
 				Method:  http.MethodPost,
 				Path:    "/verify-permission",
-				Handler: auth.VerifyPermissionHandler(serverCtx),
+				Handler: serverCtx.Auth(auth.VerifyPermissionHandler(serverCtx)),
 			},
 		},
 		rest.WithPrefix("/api/v1/auth"),
@@ -50,27 +57,27 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{
 				Method:  http.MethodGet,
 				Path:    "/profile",
-				Handler: users.GetProfileHandler(serverCtx),
+				Handler: serverCtx.Auth(users.GetProfileHandler(serverCtx)),
 			},
 			{
 				Method:  http.MethodPut,
 				Path:    "/profile",
-				Handler: users.UpdateProfileHandler(serverCtx),
+				Handler: serverCtx.Auth(users.UpdateProfileHandler(serverCtx)),
 			},
 			{
 				Method:  http.MethodPut,
 				Path:    "/password",
-				Handler: users.ChangePasswordHandler(serverCtx),
+				Handler: serverCtx.Auth(users.ChangePasswordHandler(serverCtx)),
 			},
 			{
 				Method:  http.MethodGet,
 				Path:    "/:user_id/stats",
-				Handler: users.GetUserStatsHandler(serverCtx),
+				Handler: serverCtx.Auth(users.GetUserStatsHandler(serverCtx)),
 			},
 			{
 				Method:  http.MethodGet,
 				Path:    "/:user_id/permissions",
-				Handler: users.GetUserPermissionsHandler(serverCtx),
+				Handler: serverCtx.Auth(users.GetUserPermissionsHandler(serverCtx)),
 			},
 		},
 		rest.WithPrefix("/api/v1/users"),
@@ -82,12 +89,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{
 				Method:  http.MethodGet,
 				Path:    "/",
-				Handler: admin.GetUserListHandler(serverCtx),
+				Handler: serverCtx.Auth(serverCtx.AdminOnly(admin.GetUserListHandler(serverCtx))),
 			},
 			{
 				Method:  http.MethodPut,
 				Path:    "/:user_id/role",
-				Handler: admin.UpdateUserRoleHandler(serverCtx),
+				Handler: serverCtx.Auth(serverCtx.AdminOnly(admin.UpdateUserRoleHandler(serverCtx))),
 			},
 		},
 		rest.WithPrefix("/api/v1/admin/users"),

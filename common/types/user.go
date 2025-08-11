@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 // User 用户基础信息
 type User struct {
@@ -8,9 +11,9 @@ type User struct {
 	Username      string    `json:"username" db:"username"`
 	Email         string    `json:"email" db:"email"`
 	PasswordHash  string    `json:"-" db:"password_hash"` // 不对外暴露密码哈希
-	RealName      string    `json:"real_name" db:"real_name"`
-	AvatarUrl     string    `json:"avatar_url" db:"avatar_url"`
-	Bio           string    `json:"bio" db:"bio"`
+	RealName      sql.NullString `json:"real_name" db:"real_name"`
+	AvatarUrl     sql.NullString `json:"avatar_url" db:"avatar_url"`
+	Bio           sql.NullString `json:"bio" db:"bio"`
 	Role          string    `json:"role" db:"role"`
 	Status        string    `json:"status" db:"status"`
 	EmailVerified bool      `json:"email_verified" db:"email_verified"`
