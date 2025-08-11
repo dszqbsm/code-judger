@@ -244,7 +244,7 @@ func (l *RegisterLogic) buildUserInfo(user *types.User) usertypes.UserInfo {
 		Status:        user.Status,
 		EmailVerified: user.EmailVerified,
 		LoginCount:    user.LoginCount,
-		LastLoginAt:   formatTime(user.LastLoginAt),
+		LastLoginAt:   utils.FormatNullTime(user.LastLoginAt),
 		CreatedAt:     user.CreatedAt.Format(time.RFC3339),
 	}
 }

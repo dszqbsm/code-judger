@@ -31,7 +31,7 @@ func GetProfileHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			Status:        user.Status,
 			EmailVerified: user.EmailVerified,
 			LoginCount:    user.LoginCount,
-			LastLoginAt:   formatTimePtr(user.LastLoginAt),
+			LastLoginAt:   utils.FormatNullTimeCustom(user.LastLoginAt, "2006-01-02T15:04:05Z07:00"),
 			CreatedAt:     user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 

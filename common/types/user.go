@@ -7,21 +7,21 @@ import (
 
 // User 用户基础信息
 type User struct {
-	ID            int64     `json:"id" db:"id"`
-	Username      string    `json:"username" db:"username"`
-	Email         string    `json:"email" db:"email"`
-	PasswordHash  string    `json:"-" db:"password_hash"` // 不对外暴露密码哈希
-	RealName      sql.NullString `json:"real_name" db:"real_name"`
-	AvatarUrl     sql.NullString `json:"avatar_url" db:"avatar_url"`
-	Bio           sql.NullString `json:"bio" db:"bio"`
-	Role          string    `json:"role" db:"role"`
-	Status        string    `json:"status" db:"status"`
-	EmailVerified bool      `json:"email_verified" db:"email_verified"`
-	LastLoginAt   *time.Time `json:"last_login_at" db:"last_login_at"`
-	LastLoginIP   string    `json:"last_login_ip" db:"last_login_ip"`
-	LoginCount    int64     `json:"login_count" db:"login_count"`
-	CreatedAt     time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+	ID            int64        `json:"id" db:"id"`
+	Username      string       `json:"username" db:"username"`
+	Email         string       `json:"email" db:"email"`
+	PasswordHash  string       `json:"-" db:"password_hash"` // 不对外暴露密码哈希
+	RealName      string       `json:"real_name" db:"real_name"`
+	AvatarUrl     string       `json:"avatar_url" db:"avatar_url"`
+	Bio           string       `json:"bio" db:"bio"`
+	Role          string       `json:"role" db:"role"`
+	Status        string       `json:"status" db:"status"`
+	EmailVerified bool         `json:"email_verified" db:"email_verified"`
+	LastLoginAt   sql.NullTime `json:"last_login_at" db:"last_login_at"`
+	LastLoginIP   string       `json:"last_login_ip" db:"last_login_ip"`
+	LoginCount    int64        `json:"login_count" db:"login_count"`
+	CreatedAt     time.Time    `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time    `json:"updated_at" db:"updated_at"`
 }
 
 // UserToken 用户令牌信息
@@ -116,7 +116,7 @@ var RolePermissions = map[string][]string{
 	},
 	RoleTeacher: {
 		"user:profile:read",
-		"user:profile:update", 
+		"user:profile:update",
 		"user:password:change",
 		"problem:read",
 		"problem:create",
