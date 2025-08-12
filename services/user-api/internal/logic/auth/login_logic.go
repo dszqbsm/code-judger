@@ -157,7 +157,7 @@ func (l *LoginLogic) Login(req *usertypes.LoginReq) (resp *usertypes.LoginResp, 
 		RefreshToken:       refreshToken,
 		AccessTokenExpire:  now.Add(time.Duration(l.svcCtx.Config.Auth.AccessExpire) * time.Second),
 		RefreshTokenExpire: now.Add(time.Duration(l.svcCtx.Config.Auth.RefreshExpire) * time.Second),
-		ClientInfo:         l.extractClientInfo(), // 从请求头提取客户端信息
+		ClientInfo:         `{"user_agent":"unknown","ip_address":"127.0.0.1"}`, // 暂时使用固定JSON字符串
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
