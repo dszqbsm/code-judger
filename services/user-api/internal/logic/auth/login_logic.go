@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"time"
 
 	"github.com/online-judge/code-judger/common/types"
@@ -16,6 +18,7 @@ type LoginLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	r      *http.Request
 }
 
 func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic {
@@ -23,7 +26,71 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
+		r:      nil, // 将通过 SetRequest 方法设置
 	}
+}
+
+func NewLoginLogicWithRequest(ctx context.Context, svcCtx *svc.ServiceContext, r *http.Request) *LoginLogic {
+	return &LoginLogic{
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+		r:      r,
+	}
+}
+
+// extractClientInfo 从 HTTP 请求中提取客户端信息并返回 JSON 字符串
+func (l *LoginLogic) extractClientInfo() string {
+	if l.r == nil {
+		return "{}"
+	}
+
+	clientInfo := map[string]string{
+		"user_agent": l.r.UserAgent(),
+		"ip_address": l.getClientIP(),
+	}
+
+	jsonBytes, err := json.Marshal(clientInfo)
+	if err != nil {
+		logx.Errorf("序列化客户端信息失败: %v", err)
+		return "{}"
+	}
+
+	return string(jsonBytes)
+}
+
+// getClientIP 获取客户端真实IP地址
+func (l *LoginLogic) getClientIP() string {
+	if l.r == nil {
+		return "unknown"
+	}
+
+	// 优先从 X-Real-IP 头获取
+	if ip := l.r.Header.Get("X-Real-IP"); ip != "" {
+		return ip
+	}
+
+	// 其次从 X-Forwarded-For 头获取
+	if ip := l.r.Header.Get("X-Forwarded-For"); ip != "" {
+		// X-Forwarded-For 可能包含多个IP，取第一个
+		if idx := len(ip); idx > 0 {
+			if commaIdx := 0; commaIdx < idx {
+				for i, char := range ip {
+					if char == ',' {
+						commaIdx = i
+						break
+					}
+				}
+				if commaIdx > 0 {
+					return ip[:commaIdx]
+				}
+			}
+			return ip
+		}
+	}
+
+	// 最后从 RemoteAddr 获取
+	return l.r.RemoteAddr
 }
 
 func (l *LoginLogic) Login(req *usertypes.LoginReq) (resp *usertypes.LoginResp, err error) {
@@ -90,7 +157,7 @@ func (l *LoginLogic) Login(req *usertypes.LoginReq) (resp *usertypes.LoginResp, 
 		RefreshToken:       refreshToken,
 		AccessTokenExpire:  now.Add(time.Duration(l.svcCtx.Config.Auth.AccessExpire) * time.Second),
 		RefreshTokenExpire: now.Add(time.Duration(l.svcCtx.Config.Auth.RefreshExpire) * time.Second),
-		ClientInfo:         "", // TODO: 从请求头提取客户端信息
+		ClientInfo:         l.extractClientInfo(), // 从请求头提取客户端信息
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
@@ -107,18 +174,23 @@ func (l *LoginLogic) Login(req *usertypes.LoginReq) (resp *usertypes.LoginResp, 
 	}
 
 	// 6. 更新用户登录信息
-	err = l.svcCtx.UserModel.UpdateLastLogin(l.ctx, user.ID, "127.0.0.1") // TODO: 获取真实IP
+	clientIP := l.getClientIP()
+	err = l.svcCtx.UserModel.UpdateLastLogin(l.ctx, user.ID, clientIP)
 	if err != nil {
 		logx.Errorf("更新登录信息失败: %v", err)
 		// 不影响登录流程
 	}
 
 	// 7. 记录登录日志
+	userAgent := ""
+	if l.r != nil {
+		userAgent = l.r.UserAgent()
+	}
 	loginLog := &types.UserLoginLog{
 		UserID:      user.ID,
 		LoginType:   types.LoginTypePassword,
-		IPAddress:   "127.0.0.1", // TODO: 获取真实IP
-		UserAgent:   "",          // TODO: 从请求头获取
+		IPAddress:   clientIP,
+		UserAgent:   userAgent,
 		LoginStatus: types.LoginStatusSuccess,
 		CreatedAt:   now,
 	}
