@@ -1,0 +1,233 @@
+package problem
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"code-judger/services/problem-api/internal/svc"
+	"code-judger/services/problem-api/internal/types"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type UpdateProblemLogic struct {
+	logx.Logger
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+}
+
+func NewUpdateProblemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateProblemLogic {
+	return &UpdateProblemLogic{
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+	}
+}
+
+func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *types.UpdateProblemResp, err error) {
+	// 验证题目ID
+	if req.Id <= 0 {
+		return &types.UpdateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    400,
+				Message: "无效的题目ID",
+			},
+		}, nil
+	}
+
+	// 获取当前用户ID（从JWT中获取，这里先模拟）
+	currentUserId := int64(1) // 临时硬编码
+
+	// 查询现有题目
+	existingProblem, err := l.svcCtx.ProblemModel.FindOne(l.ctx, req.Id)
+	if err != nil {
+		logx.Errorf("Failed to find problem: id=%d, error=%v", req.Id, err)
+		return &types.UpdateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    404,
+				Message: "题目不存在",
+			},
+		}, nil
+	}
+
+	// 检查题目是否被删除
+	if existingProblem.DeletedAt.Valid {
+		return &types.UpdateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    404,
+				Message: "题目已被删除",
+			},
+		}, nil
+	}
+
+	// 检查权限（只有创建者和管理员可以修改）
+	if existingProblem.CreatedBy != currentUserId {
+		// TODO: 检查是否为管理员
+		return &types.UpdateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    403,
+				Message: "没有权限修改此题目",
+			},
+		}, nil
+	}
+
+	// 验证更新参数
+	if err := l.validateUpdateRequest(req); err != nil {
+		return &types.UpdateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    400,
+				Message: err.Error(),
+			},
+		}, nil
+	}
+
+	// 构建更新数据
+	updatedProblem := *existingProblem
+	hasChanges := false
+
+	// 更新字段（只更新非空字段）
+	if req.Title != "" {
+		updatedProblem.Title = req.Title
+		hasChanges = true
+	}
+	if req.Description != "" {
+		updatedProblem.Description = req.Description
+		hasChanges = true
+	}
+	if req.InputFormat != "" {
+		updatedProblem.InputFormat = sql.NullString{String: req.InputFormat, Valid: true}
+		hasChanges = true
+	}
+	if req.OutputFormat != "" {
+		updatedProblem.OutputFormat = sql.NullString{String: req.OutputFormat, Valid: true}
+		hasChanges = true
+	}
+	if req.SampleInput != "" {
+		updatedProblem.SampleInput = sql.NullString{String: req.SampleInput, Valid: true}
+		hasChanges = true
+	}
+	if req.SampleOutput != "" {
+		updatedProblem.SampleOutput = sql.NullString{String: req.SampleOutput, Valid: true}
+		hasChanges = true
+	}
+	if req.Difficulty != "" {
+		updatedProblem.Difficulty = req.Difficulty
+		hasChanges = true
+	}
+	if req.TimeLimit > 0 {
+		updatedProblem.TimeLimit = req.TimeLimit
+		hasChanges = true
+	}
+	if req.MemoryLimit > 0 {
+		updatedProblem.MemoryLimit = req.MemoryLimit
+		hasChanges = true
+	}
+
+	// 更新Languages
+	if len(req.Languages) > 0 {
+		languagesJson, _ := json.Marshal(req.Languages)
+		updatedProblem.Languages = sql.NullString{String: string(languagesJson), Valid: true}
+		hasChanges = true
+	}
+
+	// 更新Tags
+	if len(req.Tags) > 0 {
+		tagsJson, _ := json.Marshal(req.Tags)
+		updatedProblem.Tags = sql.NullString{String: string(tagsJson), Valid: true}
+		hasChanges = true
+	}
+
+	// 更新公开状态
+	updatedProblem.IsPublic = req.IsPublic
+	hasChanges = true
+
+	// 如果没有变更，直接返回
+	if !hasChanges {
+		return &types.UpdateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    200,
+				Message: "没有需要更新的内容",
+			},
+			Data: types.UpdateProblemData{
+				ProblemId: req.Id,
+				UpdatedAt: existingProblem.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+				Message:   "题目信息无变化",
+			},
+		}, nil
+	}
+
+	// 执行更新（带缓存清理）
+	updatedProblem.UpdatedAt = time.Now()
+	err = l.svcCtx.ProblemModel.UpdateWithCache(l.ctx, &updatedProblem)
+	if err != nil {
+		logx.Errorf("Failed to update problem: id=%d, error=%v", req.Id, err)
+		return &types.UpdateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    500,
+				Message: "更新题目失败",
+			},
+		}, nil
+	}
+
+	// 记录操作日志
+	logx.Infof("Problem updated successfully: id=%d, title=%s, updated_by=%d", 
+		req.Id, updatedProblem.Title, currentUserId)
+
+	return &types.UpdateProblemResp{
+		BaseResp: types.BaseResp{
+			Code:    200,
+			Message: "题目更新成功",
+		},
+		Data: types.UpdateProblemData{
+			ProblemId: req.Id,
+			UpdatedAt: updatedProblem.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			Message:   "题目信息已更新",
+		},
+	}, nil
+}
+
+// 验证更新请求参数
+func (l *UpdateProblemLogic) validateUpdateRequest(req *types.UpdateProblemReq) error {
+	// 验证标题长度
+	if req.Title != "" && (len(req.Title) == 0 || len(req.Title) > 200) {
+		return fmt.Errorf("题目标题长度必须在1-200字符之间")
+	}
+
+	// 验证描述长度
+	if req.Description != "" && len(req.Description) < 10 {
+		return fmt.Errorf("题目描述至少需要10个字符")
+	}
+
+	// 验证难度级别
+	if req.Difficulty != "" {
+		validDifficulties := map[string]bool{"easy": true, "medium": true, "hard": true}
+		if !validDifficulties[req.Difficulty] {
+			return fmt.Errorf("无效的难度级别: %s", req.Difficulty)
+		}
+	}
+
+	// 验证时间限制
+	if req.TimeLimit > 0 && (req.TimeLimit < 100 || req.TimeLimit > 10000) {
+		return fmt.Errorf("时间限制必须在100-10000毫秒之间")
+	}
+
+	// 验证内存限制
+	if req.MemoryLimit > 0 && (req.MemoryLimit < 16 || req.MemoryLimit > 512) {
+		return fmt.Errorf("内存限制必须在16-512MB之间")
+	}
+
+	// 验证编程语言
+	if len(req.Languages) > 0 && len(req.Languages) == 0 {
+		return fmt.Errorf("至少需要指定一种编程语言")
+	}
+
+	// 验证标签数量
+	if len(req.Tags) > 10 {
+		return fmt.Errorf("标签数量不能超过10个")
+	}
+
+	return nil
+}

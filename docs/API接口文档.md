@@ -3,7 +3,9 @@
 ## 1. 文档概述
 
 ### 1.1 接口规范
-- **Base URL**: `http://localhost:8888`
+- **Base URL**: 
+  - 用户服务: `http://localhost:8888`
+  - 题目服务: `http://localhost:8889`
 - **协议**: HTTP/HTTPS
 - **数据格式**: JSON
 - **字符编码**: UTF-8
@@ -48,6 +50,16 @@
 | 1008 | 无效令牌 |
 | 1009 | 令牌过期 |
 | 1010 | 权限拒绝 |
+| 2001 | 题目不存在 |
+| 2002 | 题目已存在 |
+| 2003 | 题目标题无效 |
+| 2004 | 题目描述无效 |
+| 2005 | 难度级别无效 |
+| 2006 | 时间限制无效 |
+| 2007 | 内存限制无效 |
+| 2008 | 编程语言无效 |
+| 2009 | 标签数量超限 |
+| 2010 | 题目已删除 |
 
 ## 2. 用户认证接口
 
@@ -638,7 +650,257 @@ func login(username, password string) error {
 }
 ```
 
-## 8. 版本更新日志
+## 8. 题目管理接口
+
+### 8.1 创建题目 [P0]
+
+**接口地址**: `POST /api/v1/problems`  
+**需要认证**: 是 (教师/管理员权限)  
+**请求头**: `Authorization: Bearer {token}`
+
+#### 请求参数
+
+```json
+{
+    "title": "两数之和",
+    "description": "给定一个整数数组nums和一个整数目标值target，请你在该数组中找出和为目标值target的那两个整数，并返回它们的数组下标。",
+    "input_format": "第一行包含一个整数n，表示数组长度。第二行包含n个整数，表示数组nums。第三行包含一个整数target，表示目标值。",
+    "output_format": "输出两个整数，表示和为target的两个数的下标（从0开始），用空格分隔。",
+    "sample_input": "4\n2 7 11 15\n9",
+    "sample_output": "0 1",
+    "difficulty": "easy",
+    "time_limit": 1000,
+    "memory_limit": 128,
+    "languages": ["cpp", "java", "python", "go"],
+    "tags": ["数组", "哈希表"],
+    "is_public": true
+}
+```
+
+#### 参数说明
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 是 | 题目标题(1-200字符) |
+| description | string | 是 | 题目描述(至少10字符) |
+| input_format | string | 是 | 输入格式说明 |
+| output_format | string | 是 | 输出格式说明 |
+| sample_input | string | 是 | 样例输入 |
+| sample_output | string | 是 | 样例输出 |
+| difficulty | string | 是 | 难度等级(easy/medium/hard) |
+| time_limit | integer | 是 | 时间限制(毫秒，100-10000) |
+| memory_limit | integer | 是 | 内存限制(MB，16-512) |
+| languages | array | 是 | 支持的编程语言 |
+| tags | array | 否 | 题目标签(最多10个) |
+| is_public | boolean | 是 | 是否公开 |
+
+#### 响应示例
+
+```json
+{
+    "code": 200,
+    "message": "题目创建成功",
+    "data": {
+        "problem_id": 1001,
+        "title": "两数之和",
+        "status": "draft",
+        "created_at": "2024-01-15T10:30:00Z"
+    }
+}
+```
+
+### 8.2 获取题目列表 [P0]
+
+**接口地址**: `GET /api/v1/problems`  
+**需要认证**: 是  
+**请求头**: `Authorization: Bearer {token}`
+
+#### 查询参数
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | integer | 否 | 1 | 页码(≥1) |
+| limit | integer | 否 | 20 | 每页数量(1-100) |
+| difficulty | string | 否 | - | 难度筛选(easy/medium/hard) |
+| tags | string | 否 | - | 标签筛选(逗号分隔) |
+| keyword | string | 否 | - | 搜索关键词 |
+| sort_by | string | 否 | created_at | 排序字段(created_at/title/difficulty/acceptance_rate) |
+| order | string | 否 | desc | 排序方向(asc/desc) |
+
+#### 响应示例
+
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "problems": [
+            {
+                "id": 1001,
+                "title": "两数之和",
+                "difficulty": "easy",
+                "tags": ["数组", "哈希表"],
+                "acceptance_rate": 71.36,
+                "created_at": "2024-01-15T10:30:00Z"
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "limit": 20,
+            "total": 1,
+            "pages": 1
+        }
+    }
+}
+```
+
+### 8.3 获取题目详情 [P0]
+
+**接口地址**: `GET /api/v1/problems/{id}`  
+**需要认证**: 是  
+**请求头**: `Authorization: Bearer {token}`
+
+#### 路径参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | integer | 是 | 题目ID |
+
+#### 响应示例
+
+```json
+{
+    "code": 200,
+    "message": "获取成功",
+    "data": {
+        "id": 1001,
+        "title": "两数之和",
+        "description": "给定一个整数数组nums和一个整数目标值target...",
+        "input_format": "第一行包含一个整数n...",
+        "output_format": "输出两个整数...",
+        "sample_input": "4\n2 7 11 15\n9",
+        "sample_output": "0 1",
+        "difficulty": "easy",
+        "time_limit": 1000,
+        "memory_limit": 128,
+        "languages": ["cpp", "java", "python", "go"],
+        "tags": ["数组", "哈希表"],
+        "author": {
+            "user_id": 1001,
+            "username": "teacher1",
+            "name": "张教师"
+        },
+        "statistics": {
+            "total_submissions": 1250,
+            "accepted_submissions": 892,
+            "acceptance_rate": 71.36
+        },
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-20T15:45:00Z"
+    }
+}
+```
+
+### 8.4 更新题目 [P0]
+
+**接口地址**: `PUT /api/v1/problems/{id}`  
+**需要认证**: 是 (创建者/管理员权限)  
+**请求头**: `Authorization: Bearer {token}`
+
+#### 路径参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | integer | 是 | 题目ID |
+
+#### 请求参数
+
+```json
+{
+    "title": "两数之和（更新版）",
+    "description": "更新后的题目描述...",
+    "difficulty": "medium",
+    "time_limit": 2000,
+    "memory_limit": 256,
+    "is_public": true
+}
+```
+
+**注意**: 只需要传递要更新的字段，其他字段保持不变。
+
+#### 响应示例
+
+```json
+{
+    "code": 200,
+    "message": "题目更新成功",
+    "data": {
+        "problem_id": 1001,
+        "updated_at": "2024-01-20T16:30:00Z",
+        "message": "题目信息已更新"
+    }
+}
+```
+
+### 8.5 删除题目 [P0]
+
+**接口地址**: `DELETE /api/v1/problems/{id}`  
+**需要认证**: 是 (创建者/管理员权限)  
+**请求头**: `Authorization: Bearer {token}`
+
+#### 路径参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | integer | 是 | 题目ID |
+
+#### 响应示例
+
+```json
+{
+    "code": 200,
+    "message": "题目删除成功",
+    "data": {
+        "problem_id": 1001,
+        "deleted_at": "2024-01-20T17:00:00Z",
+        "message": "题目已被标记为删除状态"
+    }
+}
+```
+
+### 8.6 服务健康检查
+
+**接口地址**: `GET /api/v1/health`  
+**需要认证**: 否
+
+#### 响应示例
+
+```json
+{
+    "status": "healthy",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "version": "v1.0.0"
+}
+```
+
+### 8.7 服务指标
+
+**接口地址**: `GET /api/v1/metrics`  
+**需要认证**: 否
+
+#### 响应示例
+
+```json
+{
+    "request_count": 1000,
+    "error_count": 5,
+    "avg_response_time": 85.5,
+    "cache_hit_rate": 92.3,
+    "database_conn_pool": 10
+}
+```
+
+## 9. 版本更新日志
 
 ### v1.0.0 (2024-01-15)
 - 初始版本发布
@@ -646,8 +908,16 @@ func login(username, password string) error {
 - 支持用户注册、登录、权限管理
 - 完整的JWT令牌机制
 
+### v1.1.0 (2024-01-15)
+- 新增题目管理服务
+- 实现题目CRUD操作
+- 支持题目分类和标签
+- 集成缓存策略
+- 性能优化和监控
+
 ### 后续版本计划
-- v1.1.0: 添加邮箱验证功能
-- v1.2.0: 支持第三方登录(OAuth)
-- v1.3.0: 增加双因子认证(2FA)
+- v1.2.0: 添加邮箱验证功能
+- v1.3.0: 支持第三方登录(OAuth)
+- v1.4.0: 增加双因子认证(2FA)
+- v1.5.0: 题目测试数据管理
 - v2.0.0: 用户行为分析和推荐系统
