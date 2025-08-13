@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"code-judger/services/problem-api/internal/config"
 	"code-judger/services/problem-api/internal/types"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ func TestCreateProblemLogic_CreateProblem(t *testing.T) {
 	// 这里使用内存数据库或Mock，实际测试中不连接真实数据库
 	// c := config.Config{}
 	// svcCtx := svc.NewServiceContext(c)
-	
+
 	tests := []struct {
 		name    string
 		req     *types.CreateProblemReq
@@ -184,7 +183,7 @@ func TestCreateProblemLogic_CreateProblem(t *testing.T) {
 
 			// 测试验证函数
 			err := logic.validateRequest(tt.req)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Equal(t, tt.errMsg, err.Error())
