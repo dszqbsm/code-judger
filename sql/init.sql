@@ -64,7 +64,7 @@ CREATE TABLE user_tokens (
     refresh_token VARCHAR(500) NOT NULL COMMENT '刷新令牌',
     access_token_expire TIMESTAMP NOT NULL COMMENT '访问令牌过期时间',
     refresh_token_expire TIMESTAMP NOT NULL COMMENT '刷新令牌过期时间',
-    client_info JSON COMMENT '客户端信息(浏览器、设备等)',
+    client_info VARCHAR(1000) DEFAULT '' COMMENT '客户端信息(格式化字符串: user_agent|ip_address)',
     is_revoked BOOLEAN DEFAULT FALSE COMMENT '是否已撤销',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -88,8 +88,8 @@ CREATE TABLE user_login_logs (
     user_agent TEXT COMMENT '浏览器用户代理信息',
     login_status ENUM('success', 'failed', 'blocked') NOT NULL COMMENT '登录状态',
     failure_reason VARCHAR(200) DEFAULT '' COMMENT '登录失败原因',
-    location_info JSON COMMENT 'IP地理位置信息',
-    device_info JSON COMMENT '设备信息',
+    location_info VARCHAR(500) DEFAULT '' COMMENT 'IP地理位置信息(格式化字符串: 国家|省份|城市)',
+    device_info VARCHAR(500) DEFAULT '' COMMENT '设备信息(格式化字符串: 操作系统|浏览器|设备类型)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
     
     -- 外键约束

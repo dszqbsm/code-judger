@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -39,24 +38,16 @@ func NewLoginLogicWithRequest(ctx context.Context, svcCtx *svc.ServiceContext, r
 	}
 }
 
-// extractClientInfo 从 HTTP 请求中提取客户端信息并返回 JSON 字符串
+// extractClientInfo 从 HTTP 请求中提取客户端信息并返回格式化字符串
 func (l *LoginLogic) extractClientInfo() string {
 	if l.r == nil {
-		return "{}"
+		return utils.FormatClientInfo("unknown", "unknown")
 	}
 
-	clientInfo := map[string]string{
-		"user_agent": l.r.UserAgent(),
-		"ip_address": l.getClientIP(),
-	}
+	userAgent := l.r.UserAgent()
+	ipAddress := l.getClientIP()
 
-	jsonBytes, err := json.Marshal(clientInfo)
-	if err != nil {
-		logx.Errorf("序列化客户端信息失败: %v", err)
-		return "{}"
-	}
-
-	return string(jsonBytes)
+	return utils.FormatClientInfo(userAgent, ipAddress)
 }
 
 // getClientIP 获取客户端真实IP地址
@@ -157,7 +148,7 @@ func (l *LoginLogic) Login(req *usertypes.LoginReq) (resp *usertypes.LoginResp, 
 		RefreshToken:       refreshToken,
 		AccessTokenExpire:  now.Add(time.Duration(l.svcCtx.Config.Auth.AccessExpire) * time.Second),
 		RefreshTokenExpire: now.Add(time.Duration(l.svcCtx.Config.Auth.RefreshExpire) * time.Second),
-		ClientInfo:         `{"user_agent":"unknown","ip_address":"127.0.0.1"}`, // 暂时使用固定JSON字符串
+		ClientInfo:         utils.FormatClientInfo("unknown", "127.0.0.1"), // 暂时使用固定格式化字符串
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
