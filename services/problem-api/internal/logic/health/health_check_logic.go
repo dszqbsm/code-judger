@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"code-judger/services/problem-api/internal/svc"
-	"code-judger/services/problem-api/internal/types"
+	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
+	"github.com/online-judge/code-judger/services/problem-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

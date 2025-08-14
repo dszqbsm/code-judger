@@ -1,5 +1,15 @@
 syntax = "v1"
 
+info (
+	title:   "题目服务API"
+	desc:    "在线判题系统题目管理微服务"
+	author:  "OJ Team"
+	email:   "oj-team@example.com"
+	version: "v1.0.0"
+)
+
+// ==================== 类型定义 ====================
+
 // 通用响应结构
 type BaseResp {
 	Code    int    `json:"code"`
@@ -175,4 +185,49 @@ type MetricsResp {
 	AvgResponseTime  float64 `json:"avg_response_time"`
 	CacheHitRate     float64 `json:"cache_hit_rate"`
 	DatabaseConnPool int     `json:"database_conn_pool"`
+}
+
+// ==================== 服务定义 ====================
+
+// JWT认证
+@server (
+	jwt: Auth
+	group: problem
+	prefix: /api/v1
+)
+service problem-api {
+	@doc "创建题目"
+	@handler CreateProblem
+	post /problems (CreateProblemReq) returns (CreateProblemResp)
+	
+	@doc "获取题目列表"
+	@handler GetProblemList
+	get /problems (GetProblemListReq) returns (GetProblemListResp)
+	
+	@doc "获取题目详情"
+	@handler GetProblemDetail
+	get /problems/:id (GetProblemDetailReq) returns (GetProblemDetailResp)
+	
+	@doc "更新题目"
+	@handler UpdateProblem
+	put /problems/:id (UpdateProblemReq) returns (UpdateProblemResp)
+	
+	@doc "删除题目"
+	@handler DeleteProblem
+	delete /problems/:id (DeleteProblemReq) returns (DeleteProblemResp)
+}
+
+// 健康检查和监控接口（不需要认证）
+@server (
+	group: health
+	prefix: /api/v1
+)
+service problem-api {
+	@doc "健康检查"
+	@handler HealthCheck
+	get /health returns (HealthResp)
+	
+	@doc "服务指标"
+	@handler Metrics
+	get /metrics returns (MetricsResp)
 }

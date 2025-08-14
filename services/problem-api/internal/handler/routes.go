@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"code-judger/services/problem-api/internal/handler/health"
-	"code-judger/services/problem-api/internal/handler/problem"
-	"code-judger/services/problem-api/internal/svc"
+	"github.com/online-judge/code-judger/services/problem-api/internal/handler/health"
+	"github.com/online-judge/code-judger/services/problem-api/internal/handler/problem"
+	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )

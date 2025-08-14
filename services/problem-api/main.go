@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
 
-	"code-judger/services/problem-api/models"
+	"github.com/online-judge/code-judger/services/problem-api/models"
 )
 
 type ProblemAPI struct {
@@ -56,7 +56,7 @@ func main() {
 func (api *ProblemAPI) setupRoutes(r *mux.Router) {
 	// 健康检查
 	r.HandleFunc("/api/v1/health", api.healthCheck).Methods("GET")
-	
+
 	// 题目管理接口
 	r.HandleFunc("/api/v1/problems", api.createProblem).Methods("POST")
 	r.HandleFunc("/api/v1/problems", api.getProblemList).Methods("GET")

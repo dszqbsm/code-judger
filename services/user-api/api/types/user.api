@@ -1,15 +1,7 @@
 syntax = "v1"
 
-info(
-    title: "用户服务API"
-    desc: "在线判题系统用户管理相关接口"
-    author: "OJ Team"
-    email: "dev@oj.local"
-    version: "v1.0"
-)
-
 // ===========================================
-// 数据类型定义
+// 请求数据类型
 // ===========================================
 
 // 用户注册请求
@@ -164,112 +156,4 @@ type UserPermissionsResp {
 type UserListResponse {
     BaseResp
     Data UserListResp `json:"data"`
-}
-
-// ===========================================
-// API路由定义
-// ===========================================
-
-@server(
-    group: auth
-    prefix: /api/v1/auth
-)
-service user-api {
-    @doc(
-        summary: "用户注册"
-        description: "新用户注册，创建账户"
-    )
-    @handler register
-    post /register (RegisterReq) returns (RegisterResp)
-    
-    @doc(
-        summary: "用户登录"
-        description: "用户身份验证，获取访问令牌"
-    )
-    @handler login
-    post /login (LoginReq) returns (LoginResp)
-    
-    @doc(
-        summary: "刷新令牌"
-        description: "使用刷新令牌获取新的访问令牌"
-    )
-    @handler refreshToken
-    post /refresh (RefreshTokenReq) returns (RefreshTokenResp)
-    
-    @doc(
-        summary: "用户登出"
-        description: "用户会话注销，撤销令牌"
-    )
-    @handler logout
-    post /logout returns (BaseResp)
-    
-    @doc(
-        summary: "权限验证"
-        description: "验证用户是否有执行特定操作的权限"
-    )
-    @handler verifyPermission
-    post /verify-permission (VerifyPermissionReq) returns (BaseResp)
-}
-
-@server(
-    group: users
-    prefix: /api/v1/users
-    middleware: Auth
-)
-service user-api {
-    @doc(
-        summary: "获取个人信息"
-        description: "获取当前登录用户的详细信息"
-    )
-    @handler getProfile
-    get /profile returns (UserProfileResp)
-    
-    @doc(
-        summary: "更新个人信息"
-        description: "更新用户的基本信息"
-    )
-    @handler updateProfile
-    put /profile (UpdateProfileReq) returns (UserProfileResp)
-    
-    @doc(
-        summary: "修改密码"
-        description: "修改用户登录密码"
-    )
-    @handler changePassword
-    put /password (ChangePasswordReq) returns (BaseResp)
-    
-    @doc(
-        summary: "获取用户统计"
-        description: "获取指定用户的统计信息"
-    )
-    @handler getUserStats
-    get /:user_id/stats returns (UserStatsResp)
-    
-    @doc(
-        summary: "获取用户权限"
-        description: "获取指定用户的权限列表"
-    )
-    @handler getUserPermissions
-    get /:user_id/permissions returns (UserPermissionsResp)
-}
-
-@server(
-    group: admin
-    prefix: /api/v1/users
-    middleware: Auth,AdminOnly
-)
-service user-api {
-    @doc(
-        summary: "用户列表"
-        description: "获取用户列表，支持分页和筛选"
-    )
-    @handler getUserList
-    get / (UserListReq) returns (UserListResponse)
-    
-    @doc(
-        summary: "更新用户角色"
-        description: "修改指定用户的角色权限"
-    )
-    @handler updateUserRole
-    put /:user_id/role (UpdateUserRoleReq) returns (BaseResp)
 }

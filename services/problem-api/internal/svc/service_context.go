@@ -6,8 +6,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
-	"code-judger/services/problem-api/internal/config"
-	"code-judger/services/problem-api/models"
+	"github.com/online-judge/code-judger/services/problem-api/internal/config"
+	"github.com/online-judge/code-judger/services/problem-api/models"
 )
 
 type ServiceContext struct {
