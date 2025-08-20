@@ -3,9 +3,9 @@ package submission
 import (
 	"net/http"
 
-	"code-judger/services/submission-api/internal/logic/submission"
-	"code-judger/services/submission-api/internal/svc"
-	"code-judger/services/submission-api/internal/types"
+	"github.com/online-judge/code-judger/services/submission-api/internal/logic/submission"
+	"github.com/online-judge/code-judger/services/submission-api/internal/svc"
+	"github.com/online-judge/code-judger/services/submission-api/internal/types"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )

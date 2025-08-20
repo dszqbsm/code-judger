@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"code-judger/services/submission-api/internal/middleware"
-	"code-judger/services/submission-api/internal/svc"
-	"code-judger/services/submission-api/internal/types"
+	"github.com/online-judge/code-judger/services/submission-api/internal/middleware"
+	"github.com/online-judge/code-judger/services/submission-api/internal/svc"
+	"github.com/online-judge/code-judger/services/submission-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

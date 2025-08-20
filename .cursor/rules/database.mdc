@@ -1,0 +1,113 @@
+# 数据库和服务连接信息规范
+
+## MySQL 数据库连接信息
+### 基本信息
+- **容器名称**: `oj-mysql`
+- **端口**: `3306`
+- **数据库名**: `oj_system`
+- **管理员用户**: `root`
+- **管理员密码**: `oj_root_password`
+- **应用用户**: `oj_user`
+- **应用密码**: `oj_password`
+
+### 连接字符串格式
+- **本地连接**: `oj_user:oj_password@tcp(localhost:3306)/oj_system?charset=utf8mb4&parseTime=true&loc=Local`
+- **Docker内部连接**: `oj_user:oj_password@tcp(oj-mysql:3306)/oj_system?charset=utf8mb4&parseTime=true&loc=Local`
+
+### MySQL 客户端命令
+```bash
+# 使用应用用户连接
+docker exec -it oj-mysql mysql -u oj_user -poj_password
+
+# 使用root用户连接
+docker exec -it oj-mysql mysql -u root -poj_root_password
+
+# 查询指定数据库
+docker exec -it oj-mysql mysql -u oj_user -poj_password -e "USE oj_system; SHOW TABLES;"
+```
+
+## Redis 缓存连接信息
+### 基本信息
+- **容器名称**: `oj-redis`
+- **端口**: `6379`
+- **密码**: 无（开发环境）
+
+### 连接字符串
+- **本地连接**: `localhost:6379`
+- **Docker内部连接**: `oj-redis:6379`
+
+### Redis 客户端命令
+```bash
+# 连接Redis
+docker exec -it oj-redis redis-cli
+
+# 检查连接
+docker exec -it oj-redis redis-cli ping
+```
+
+## Kafka 消息队列连接信息
+### 基本信息
+- **容器名称**: `oj-kafka`
+- **端口**: `9092`
+- **Zookeeper**: `oj-zookeeper:2181`
+
+### 连接字符串
+- **本地连接**: `localhost:9092`
+- **Docker内部连接**: `oj-kafka:9092`
+
+## 其他服务连接信息
+### Consul 服务注册发现
+- **容器名称**: `oj-consul`
+- **端口**: `8500`
+- **Web UI**: `http://localhost:8500`
+
+### Elasticsearch
+- **容器名称**: `oj-elasticsearch`
+- **端口**: `9200`
+- **连接**: `http://localhost:9200`
+
+### Kibana
+- **容器名称**: `oj-kibana`
+- **端口**: `5601`
+- **Web UI**: `http://localhost:5601`
+
+### Grafana
+- **容器名称**: `oj-grafana`
+- **端口**: `3000`
+- **默认用户**: `admin`
+- **默认密码**: `oj_grafana_admin_change_me`
+- **Web UI**: `http://localhost:3000`
+
+### Prometheus
+- **容器名称**: `oj-prometheus`
+- **端口**: `9090`
+- **Web UI**: `http://localhost:9090`
+
+## 环境变量管理
+### 配置文件
+- 使用 `env.example` 作为环境变量模板
+- 复制命令: `cp env.example .env`
+- 生产环境必须修改默认密码
+
+### 安全规范
+- 敏感信息不得提交到版本控制系统
+- `.env` 文件必须加入 `.gitignore`
+- 生产环境使用专用的密钥管理服务
+
+## 网络配置
+### Docker 网络
+- **网络名称**: `oj-network`
+- **子网**: `172.20.0.0/16`
+- **网络类型**: `bridge`
+
+### 服务IP分配
+- MySQL: `172.20.0.10`
+- Redis: `172.20.0.20`
+- Zookeeper: `172.20.0.30`
+- Kafka: `172.20.0.31`
+- Elasticsearch: `172.20.0.40`
+- Kibana: `172.20.0.41`
+- Logstash: `172.20.0.42`
+- Consul: `172.20.0.50`
+- Prometheus: `172.20.0.60`
+- Grafana: `172.20.0.61`

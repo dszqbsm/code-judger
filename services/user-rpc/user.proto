@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "code-judger/services/user-rpc/pb";
+
+// 用户信息
+message UserInfo {
+  int64 user_id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+  string status = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+// 获取用户信息请求
+message GetUserReq {
+  int64 user_id = 1;
+}
+
+// 获取用户信息响应
+message GetUserResp {
+  UserInfo user = 1;
+}
+
+// 批量获取用户请求
+message GetUsersReq {
+  repeated int64 user_ids = 1;
+}
+
+// 批量获取用户响应
+message GetUsersResp {
+  repeated UserInfo users = 1;
+}
+
+// 验证用户请求
+message VerifyUserReq {
+  string username = 1;
+  string password = 2;
+}
+
+// 验证用户响应
+message VerifyUserResp {
+  bool success = 1;
+  UserInfo user = 2;
+}
+
+// 用户服务
+service User {
+  // 获取用户信息
+  rpc GetUser(GetUserReq) returns (GetUserResp);
+  // 批量获取用户信息
+  rpc GetUsers(GetUsersReq) returns (GetUsersResp);
+  // 验证用户凭据
+  rpc VerifyUser(VerifyUserReq) returns (VerifyUserResp);
+}

@@ -1,0 +1,343 @@
+# Go-Zero 框架目录结构标准
+
+## 微服务目录结构规范
+
+### API服务目录结构 (HTTP服务)
+```
+services/{service-name}-api/
+├── api/                        # API定义目录
+│   ├── {service}.api          # 主API定义文件
+│   └── types/                 # 类型定义目录
+│       └── {service}.api      # 类型定义文件
+├── etc/                       # 配置文件目录
+│   └── {service}-api.yaml     # 服务配置文件
+├── internal/                  # 内部代码目录（不对外暴露）
+│   ├── config/                # 配置结构定义
+│   │   └── config.go          # 配置结构体
+│   ├── handler/               # HTTP处理器
+│   │   └── {module}/          # 按模块分组
+│   │       └── {action}handler.go  # 具体处理器
+│   ├── logic/                 # 业务逻辑层
+│   │   └── {module}/          # 按模块分组
+│   │       └── {action}logic.go    # 具体业务逻辑
+│   ├── middleware/            # 中间件
+│   │   ├── auth_middleware.go       # 认证中间件
+│   │   ├── admin_middleware.go      # 管理员权限中间件
+│   │   └── rate_limiter.go          # 限流中间件
+│   ├── svc/                   # 服务上下文
+│   │   └── servicecontext.go        # 服务依赖注入
+│   └── types/                 # 生成的类型文件
+│       └── types.go           # API类型定义
+├── models/                    # 数据模型层
+│   ├── {table}model.go        # goctl生成的基础模型
+│   ├── {table}_model_extend.go # 扩展模型方法
+│   ├── {table}.sql            # 数据表结构
+│   └── vars.go                # 模型变量和错误定义
+├── logs/                      # 日志目录
+├── main.go                    # 服务入口文件
+├── go.mod                     # Go模块文件
+├── go.sum                     # 依赖校验文件
+├── README.md                  # 服务文档
+├── start.sh                   # 启动脚本
+└── test_apis.sh              # API测试脚本
+```
+
+### RPC服务目录结构 (gRPC服务)
+```
+services/{service-name}-rpc/
+├── etc/                       # 配置文件目录
+│   └── {service}-rpc.yaml     # RPC服务配置
+├── internal/                  # 内部代码目录
+│   ├── config/                # 配置结构定义
+│   │   └── config.go
+│   ├── logic/                 # 业务逻辑层
+│   │   └── {method}logic.go   # RPC方法实现
+│   ├── server/                # gRPC服务器
+│   │   └── {service}server.go # 服务实现
+│   └── svc/                   # 服务上下文
+│       └── servicecontext.go
+├── pb/                        # Protocol Buffer生成文件
+│   ├── {service}.pb.go        # protobuf生成的Go代码
+│   └── {service}_grpc.pb.go   # gRPC服务生成的Go代码
+├── {service}.proto            # Protocol Buffer定义文件
+├── models/                    # 数据模型（如果需要）
+├── main.go                    # RPC服务入口
+├── go.mod
+└── go.sum
+```
+
+## 项目全局目录结构
+
+### 根目录结构
+```
+project-root/
+├── services/                  # 微服务目录
+│   ├── user-api/             # 用户HTTP服务
+│   ├── user-rpc/             # 用户RPC服务
+│   ├── problem-api/          # 题目HTTP服务
+│   ├── judge-api/            # 判题HTTP服务
+│   └── submission-api/       # 提交HTTP服务
+├── common/                   # 共享代码库
+│   ├── errorx/               # 统一错误处理
+│   │   ├── errorx.go         # 错误定义
+│   │   └── code.go           # 错误码定义
+│   ├── middleware/           # 共享中间件
+│   │   ├── cors.go           # 跨域中间件
+│   │   └── log.go            # 日志中间件
+│   ├── response/             # 统一响应格式
+│   │   └── response.go       # 响应结构定义
+│   └── utils/                # 工具函数
+│       ├── jwt.go            # JWT工具
+│       ├── hash.go           # 哈希工具
+│       └── time.go           # 时间工具
+├── scripts/                  # 脚本文件
+│   ├── build.sh              # 构建脚本
+│   ├── deploy.sh             # 部署脚本
+│   └── init-db.sh            # 数据库初始化
+├── sql/                      # 数据库脚本
+│   ├── schema/               # 表结构
+│   │   ├── users.sql
+│   │   ├── problems.sql
+│   │   └── submissions.sql
+│   ├── data/                 # 初始数据
+│   └── migrations/           # 数据库迁移
+├── docs/                     # 项目文档
+│   ├── api/                  # API文档
+│   ├── guide/                # 使用指南
+│   └── design/               # 设计文档
+├── docker/                   # Docker配置
+│   ├── mysql/
+│   ├── redis/
+│   └── nginx/
+├── docker-compose.yml        # 开发环境编排
+├── Makefile                  # 构建脚本
+├── go.mod                    # 项目根模块
+├── go.sum                    # 依赖校验
+├── README.md                 # 项目说明
+├── env.example              # 环境变量模板
+└── .gitignore              # Git忽略文件
+```
+
+## 代码组织规范
+
+### API定义规范
+```go
+// API文件示例 (*.api)
+syntax = "v1"
+
+info(
+    title: "用户服务API"
+    desc: "用户管理相关接口"
+    author: "开发团队"
+    email: "dev@example.com"
+    version: "v1.0"
+)
+
+import "types/user.api"
+
+@server(
+    prefix: /api/v1
+    group: user
+    middleware: AuthMiddleware
+)
+service user-api {
+    @doc "用户登录"
+    @handler LoginHandler
+    post /users/login (LoginReq) returns (LoginResp)
+    
+    @doc "获取用户信息"
+    @handler GetUserHandler
+    get /users/:id (GetUserReq) returns (GetUserResp)
+}
+```
+
+### 配置文件规范
+```yaml
+# 服务配置示例 ({service}-api.yaml)
+Name: user-api
+Host: 0.0.0.0
+Port: 8888
+Timeout: 10000
+
+# 数据库配置
+DataSource: oj_user:oj_password@tcp(localhost:3306)/oj_system?charset=utf8mb4&parseTime=true&loc=Local
+
+# Redis配置
+RedisConf:
+  Host: localhost:6379
+  Type: node
+  Pass: ""
+
+# 缓存配置
+CacheConf:
+  - Host: localhost:6379
+    Type: node
+    Pass: ""
+
+# JWT配置
+Auth:
+  AccessSecret: your_jwt_secret_key
+  AccessExpire: 86400
+
+# 业务配置
+Business:
+  MaxPageSize: 100
+  DefaultPageSize: 20
+```
+
+### 服务上下文规范
+```go
+// servicecontext.go 示例
+type ServiceContext struct {
+    Config config.Config
+    DB     sqlx.SqlConn
+    Redis  *redis.Redis
+    
+    // 数据模型
+    UserModel models.UserModel
+    
+    // 中间件
+    AuthMiddleware *middleware.AuthMiddleware
+    
+    // RPC客户端
+    ProblemRpc problemclient.Problem
+}
+
+func NewServiceContext(c config.Config) *ServiceContext {
+    // 初始化数据库连接
+    db := sqlx.NewMysql(c.DataSource)
+    
+    // 初始化Redis
+    redisClient := redis.MustNewRedis(c.RedisConf)
+    
+    return &ServiceContext{
+        Config: c,
+        DB:     db,
+        Redis:  redisClient,
+        
+        // 初始化模型
+        UserModel: models.NewUserModel(db, c.CacheConf),
+        
+        // 初始化中间件
+        AuthMiddleware: middleware.NewAuthMiddleware(c.Auth.AccessSecret),
+    }
+}
+```
+
+## 命名规范
+
+### 文件和目录命名
+- 服务名称：`{domain}-{type}` (如: `user-api`, `problem-rpc`)
+- 配置文件：`{service-name}.yaml`
+- 处理器文件：`{action}handler.go` (如: `loginhandler.go`)
+- 业务逻辑文件：`{action}logic.go` (如: `loginlogic.go`)
+- 数据模型文件：`{table}model.go` (如: `usermodel.go`)
+
+### 代码命名
+- 包名：小写字母，简短明了
+- 结构体：Pascal命名法 (如: `UserInfo`)
+- 函数和方法：Pascal命名法 (如: `GetUserInfo`)
+- 变量：camelCase命名法 (如: `userInfo`)
+- 常量：大写字母加下划线 (如: `MAX_RETRY_COUNT`)
+
+### API路由命名
+- RESTful风格：`/api/v1/users/:id`
+- 动词在HTTP方法中体现，URL只包含名词
+- 使用复数形式：`/users` 而不是 `/user`
+- 版本控制：`/api/v1/`
+
+## 错误处理规范
+
+### 统一错误响应格式
+```go
+type Response struct {
+    Code    int         `json:"code"`
+    Message string      `json:"message"`
+    Data    interface{} `json:"data,omitempty"`
+}
+
+// 成功响应
+func Success(data interface{}) *Response {
+    return &Response{
+        Code:    200,
+        Message: "success",
+        Data:    data,
+    }
+}
+
+// 错误响应
+func Error(code int, message string) *Response {
+    return &Response{
+        Code:    code,
+        Message: message,
+    }
+}
+```
+
+### 错误码定义
+```go
+const (
+    // 系统级错误 (1000-1999)
+    SystemError     = 1000
+    DatabaseError   = 1001
+    
+    // 业务级错误 (2000-2999)
+    UserNotFound    = 2001
+    InvalidPassword = 2002
+    
+    // 权限错误 (3000-3999)
+    Unauthorized    = 3001
+    Forbidden       = 3002
+)
+```
+
+## 依赖管理规范
+
+### Go模块版本
+- Go版本：`1.21+`
+- Go-Zero版本：建议使用最新稳定版
+- 数据库驱动：`github.com/go-sql-driver/mysql`
+
+### 依赖引入原则
+- 优先使用标准库
+- 选择维护活跃的第三方库
+- 避免引入过重的依赖
+- 定期更新依赖版本
+
+## 测试规范
+
+### 测试文件组织
+```
+internal/
+├── logic/
+│   ├── user/
+│   │   ├── loginlogic.go
+│   │   └── loginlogic_test.go
+│   └── problem/
+│       ├── createproblemlogic.go
+│       └── createproblemlogic_test.go
+```
+
+### 测试用例规范
+- 单元测试覆盖率不低于80%
+- 使用表格驱动测试
+- Mock外部依赖
+- 测试文件以`_test.go`结尾
+
+## 部署和监控规范
+
+### Docker容器化
+- 每个服务单独构建镜像
+- 使用多阶段构建减少镜像大小
+- 健康检查和优雅关闭
+
+### 日志规范
+- 使用结构化日志
+- 统一日志格式和级别
+- 敏感信息脱敏处理
+
+### 监控指标
+- 服务健康状态
+- 接口响应时间
+- 错误率统计
+- 资源使用情况

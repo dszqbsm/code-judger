@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"code-judger/services/submission-api/internal/config"
+	"github.com/online-judge/code-judger/services/submission-api/internal/config"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/zeromicro/go-zero/core/logx"

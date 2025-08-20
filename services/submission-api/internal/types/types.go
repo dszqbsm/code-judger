@@ -18,8 +18,8 @@ type CreateSubmissionReq struct {
 	ProblemID int64  `json:"problem_id" validate:"required"`
 	Language  string `json:"language" validate:"required,oneof=cpp c java python go javascript"`
 	Code      string `json:"code" validate:"required,max=65536"`
-	ContestID int64  `json:"contest_id,optional"`
-	IsShared  bool   `json:"is_shared,optional"`
+	ContestID int64  `json:"contest_id,omitempty"`
+	IsShared  bool   `json:"is_shared,omitempty"`
 }
 
 // 创建提交响应
@@ -401,7 +401,7 @@ type DetectPlagiarismReq struct {
 	ProblemID     *int64  `json:"problem_id,omitempty"`
 	ContestID     *int64  `json:"contest_id,omitempty"`
 	SubmissionIDs []int64 `json:"submission_ids,omitempty"`
-	Threshold     float64 `json:"threshold,default=0.8" validate:"min=0,max=1"`
+	Threshold     float64 `json:"threshold" validate:"min=0,max=1"`
 }
 
 // 检测代码抄袭响应

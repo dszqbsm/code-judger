@@ -4,12 +4,12 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
-	"code-judger/services/submission-api/internal/anticheat"
-	"code-judger/services/submission-api/internal/config"
-	"code-judger/services/submission-api/internal/messagequeue"
-	"code-judger/services/submission-api/internal/middleware"
-	"code-judger/services/submission-api/internal/websocket"
-	"code-judger/services/submission-api/models"
+	"github.com/online-judge/code-judger/services/submission-api/internal/anticheat"
+	"github.com/online-judge/code-judger/services/submission-api/internal/config"
+	"github.com/online-judge/code-judger/services/submission-api/internal/messagequeue"
+	"github.com/online-judge/code-judger/services/submission-api/internal/middleware"
+	"github.com/online-judge/code-judger/services/submission-api/internal/websocket"
+	"github.com/online-judge/code-judger/services/submission-api/models"
 )
 
 type ServiceContext struct {

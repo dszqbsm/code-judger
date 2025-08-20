@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"code-judger/services/submission-api/internal/config"
-	"code-judger/services/submission-api/models"
+	"github.com/online-judge/code-judger/services/submission-api/internal/config"
+	"github.com/online-judge/code-judger/services/submission-api/models"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

@@ -1,0 +1,10 @@
+go 1.21
+
+use (
+	.
+	./services/judge-api
+	./services/problem-api
+	./services/submission-api
+	./services/user-api
+	./services/user-rpc
+)

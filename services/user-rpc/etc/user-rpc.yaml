@@ -1,0 +1,24 @@
+Name: user-rpc
+ListenOn: 0.0.0.0:8080
+Timeout: 10000
+
+# 数据库配置
+DataSource: oj_user:oj_password@tcp(localhost:3306)/oj_system?charset=utf8mb4&parseTime=true&loc=Local
+
+# Redis配置
+RedisConf:
+  Host: localhost:6379
+  Type: node
+  Pass: ""
+
+# 缓存配置
+CacheConf:
+  - Host: localhost:6379
+    Type: node
+    Pass: ""
+
+# Etcd配置
+Etcd:
+  Hosts:
+    - localhost:2379
+  Key: user-rpc

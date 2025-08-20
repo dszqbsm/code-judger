@@ -6,7 +6,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.0
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.10.0
-	github.com/zeromicro/go-zero v1.8.5
+	github.com/zeromicro/go-zero v1.9.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/grafana/pyroscope-go v1.2.2 // indirect
+	github.com/grafana/pyroscope-go v1.2.4 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.8 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect

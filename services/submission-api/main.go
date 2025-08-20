@@ -8,9 +8,9 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
 
-	"code-judger/services/submission-api/internal/config"
-	"code-judger/services/submission-api/internal/handler/submission"
-	"code-judger/services/submission-api/internal/svc"
+	"github.com/online-judge/code-judger/services/submission-api/internal/config"
+	"github.com/online-judge/code-judger/services/submission-api/internal/handler/submission"
+	"github.com/online-judge/code-judger/services/submission-api/internal/svc"
 )
 
 var configFile = flag.String("f", "etc/submission-api.yaml", "the config file")

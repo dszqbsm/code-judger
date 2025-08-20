@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"code-judger/services/submission-api/internal/config"
+	"github.com/online-judge/code-judger/services/submission-api/internal/config"
 
 	"github.com/gorilla/websocket"
 	"github.com/zeromicro/go-zero/core/logx"
