@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package problem;
+
+option go_package = "code-judger/services/problem-rpc/pb";
+
+// 测试用例
+message TestCase {
+  int32 case_id = 1;
+  string input = 2;
+  string expected_output = 3;
+  int32 time_limit = 4;    // 可选，覆盖全局时间限制
+  int32 memory_limit = 5;  // 可选，覆盖全局内存限制
+}
+
+// 题目信息
+message ProblemInfo {
+  int64 problem_id = 1;
+  string title = 2;
+  string description = 3;
+  int32 time_limit = 4;     // 毫秒
+  int32 memory_limit = 5;   // MB
+  repeated string languages = 6; // 支持的编程语言
+  repeated TestCase test_cases = 7;
+  bool is_public = 8;
+  string difficulty = 9;
+  repeated string tags = 10;
+  string created_at = 11;
+  string updated_at = 12;
+}
+
+// 获取题目详情请求
+message GetProblemDetailReq {
+  int64 problem_id = 1;
+}
+
+// 获取题目详情响应
+message GetProblemDetailResp {
+  ProblemInfo problem = 1;
+}
+
+// 批量获取题目请求
+message GetProblemsReq {
+  repeated int64 problem_ids = 1;
+}
+
+// 批量获取题目响应
+message GetProblemsResp {
+  repeated ProblemInfo problems = 1;
+}
+
+// 验证题目是否存在请求
+message CheckProblemExistsReq {
+  int64 problem_id = 1;
+}
+
+// 验证题目是否存在响应
+message CheckProblemExistsResp {
+  bool exists = 1;
+  bool is_public = 2;
+}
+
+// 题目服务
+service Problem {
+  // 获取题目详情
+  rpc GetProblemDetail(GetProblemDetailReq) returns (GetProblemDetailResp);
+  // 批量获取题目信息
+  rpc GetProblems(GetProblemsReq) returns (GetProblemsResp);
+  // 检查题目是否存在
+  rpc CheckProblemExists(CheckProblemExistsReq) returns (CheckProblemExistsResp);
+}

@@ -196,3 +196,19 @@ Cluster:
   NodeName: "Judge Node 01"
   HeartbeatInterval: 30      # 心跳间隔(秒)
   NodeTimeout: 90            # 节点超时时间(秒)
+
+# 题目服务配置
+ProblemService:
+  UseMock: true                      # 是否使用模拟客户端（开发环境用）
+  
+  # RPC配置（推荐）
+  RPC:
+    Enabled: true                    # 启用RPC调用
+    Endpoint: "localhost:8889"       # RPC服务地址（不需要http://前缀）
+    Timeout: 5000                    # RPC超时时间(毫秒)
+  
+  # HTTP配置（向后兼容）  
+  HTTP:
+    Endpoint: "http://localhost:8888" # HTTP服务地址
+    Timeout: 10                      # HTTP超时时间(秒)
+    MaxRetries: 3                    # 最大重试次数

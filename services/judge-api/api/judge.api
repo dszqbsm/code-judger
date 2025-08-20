@@ -15,14 +15,13 @@ type BaseResp {
 
 // ==================== 判题任务提交 ====================
 type SubmitJudgeReq {
-    SubmissionId int64    `json:"submission_id" validate:"required,min=1"`
-    ProblemId    int64    `json:"problem_id" validate:"required,min=1"`
-    UserId       int64    `json:"user_id" validate:"required,min=1"`
-    Language     string   `json:"language" validate:"required,oneof=cpp c java python go javascript"`
-    Code         string   `json:"code" validate:"required,min=1"`
-    TimeLimit    int      `json:"time_limit" validate:"required,min=100,max=10000"`  // 毫秒
-    MemoryLimit  int      `json:"memory_limit" validate:"required,min=16,max=512"`  // MB
-    TestCases    []TestCase `json:"test_cases" validate:"required,min=1"`
+    SubmissionId int64  `json:"submission_id" validate:"required,min=1"`
+    ProblemId    int64  `json:"problem_id" validate:"required,min=1"`
+    UserId       int64  `json:"user_id" validate:"required,min=1"`
+    Language     string `json:"language" validate:"required,oneof=cpp c java python go javascript"`
+    Code         string `json:"code" validate:"required,min=1"`
+    // 移除 TimeLimit、MemoryLimit、TestCases
+    // 这些参数应该通过 ProblemId 从题目服务获取
 }
 
 type TestCase {

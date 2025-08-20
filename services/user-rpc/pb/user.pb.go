@@ -8,13 +8,14 @@ package pb
 
 import (
 	context "context"
+	reflect "reflect"
+	sync "sync"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -442,12 +443,12 @@ func file_user_proto_rawDescGZIP() []byte {
 
 var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_user_proto_goTypes = []interface{}{
-	(*UserInfo)(nil),      // 0: user.UserInfo
-	(*GetUserReq)(nil),    // 1: user.GetUserReq
-	(*GetUserResp)(nil),   // 2: user.GetUserResp
-	(*GetUsersReq)(nil),   // 3: user.GetUsersReq
-	(*GetUsersResp)(nil),  // 4: user.GetUsersResp
-	(*VerifyUserReq)(nil), // 5: user.VerifyUserReq
+	(*UserInfo)(nil),       // 0: user.UserInfo
+	(*GetUserReq)(nil),     // 1: user.GetUserReq
+	(*GetUserResp)(nil),    // 2: user.GetUserResp
+	(*GetUsersReq)(nil),    // 3: user.GetUsersReq
+	(*GetUsersResp)(nil),   // 4: user.GetUsersResp
+	(*VerifyUserReq)(nil),  // 5: user.VerifyUserReq
 	(*VerifyUserResp)(nil), // 6: user.VerifyUserResp
 }
 var file_user_proto_depIdxs = []int32{

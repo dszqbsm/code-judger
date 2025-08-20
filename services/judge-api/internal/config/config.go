@@ -44,6 +44,9 @@ type Config struct {
 
 	// 集群配置
 	Cluster ClusterConf `json:",omitempty"`
+
+	// 题目服务配置
+	ProblemService ProblemServiceConf
 }
 
 // Kafka配置
@@ -155,4 +158,23 @@ type ClusterConf struct {
 	NodeName          string // 节点名称
 	HeartbeatInterval int    // 心跳间隔(秒)
 	NodeTimeout       int    // 节点超时时间(秒)
+}
+
+// 题目服务配置
+type ProblemServiceConf struct {
+	// RPC配置（推荐）
+	RPC struct {
+		Enabled  bool   `json:",omitempty"` // 是否启用RPC调用
+		Endpoint string `json:",omitempty"` // RPC服务地址
+		Timeout  int    `json:",omitempty"` // RPC超时时间(毫秒)
+	} `json:",omitempty"`
+
+	// HTTP配置（兼容旧版本）
+	HTTP struct {
+		Endpoint   string `json:",omitempty"` // HTTP服务地址
+		Timeout    int    `json:",omitempty"` // HTTP超时时间(秒)
+		MaxRetries int    `json:",omitempty"` // 最大重试次数
+	} `json:",omitempty"`
+
+	UseMock bool // 是否使用模拟客户端（开发环境）
 }

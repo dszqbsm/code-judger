@@ -8,14 +8,13 @@ type BaseResp struct {
 
 // ==================== 判题任务提交 ====================
 type SubmitJudgeReq struct {
-	SubmissionId int64      `json:"submission_id" validate:"required,min=1"`
-	ProblemId    int64      `json:"problem_id" validate:"required,min=1"`
-	UserId       int64      `json:"user_id" validate:"required,min=1"`
-	Language     string     `json:"language" validate:"required,oneof=cpp c java python go javascript"`
-	Code         string     `json:"code" validate:"required,min=1"`
-	TimeLimit    int        `json:"time_limit" validate:"required,min=100,max=10000"` // 毫秒
-	MemoryLimit  int        `json:"memory_limit" validate:"required,min=16,max=512"`  // MB
-	TestCases    []TestCase `json:"test_cases" validate:"required,min=1"`
+	SubmissionId int64  `json:"submission_id" validate:"required,min=1"`
+	ProblemId    int64  `json:"problem_id" validate:"required,min=1"`
+	UserId       int64  `json:"user_id" validate:"required,min=1"`
+	Language     string `json:"language" validate:"required,oneof=cpp c java python go javascript"`
+	Code         string `json:"code" validate:"required,min=1"`
+	// 移除 TimeLimit、MemoryLimit、TestCases
+	// 这些参数应该通过 ProblemId 从题目服务获取
 }
 
 type TestCase struct {
@@ -24,6 +23,17 @@ type TestCase struct {
 	ExpectedOutput string `json:"expected_output"`
 	TimeLimit      int    `json:"time_limit,omitempty"`   // 可选，覆盖全局时间限制
 	MemoryLimit    int    `json:"memory_limit,omitempty"` // 可选，覆盖全局内存限制
+}
+
+// 题目信息（从题目服务获取）
+type ProblemInfo struct {
+	ProblemId   int64      `json:"problem_id"`
+	Title       string     `json:"title"`
+	TimeLimit   int        `json:"time_limit"`   // 毫秒
+	MemoryLimit int        `json:"memory_limit"` // MB
+	Languages   []string   `json:"languages"`    // 支持的编程语言
+	TestCases   []TestCase `json:"test_cases"`
+	IsPublic    bool       `json:"is_public"`
 }
 
 type SubmitJudgeResp struct {
