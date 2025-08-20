@@ -1,0 +1,136 @@
+Name: submission-api
+Host: 0.0.0.0
+Port: 8889
+Timeout: 10000
+
+# 数据库配置
+DataSource: oj_user:oj_password@tcp(localhost:3306)/oj_system?charset=utf8mb4&parseTime=true&loc=Local
+
+# Redis配置
+RedisConf:
+  Host: localhost:6379
+  Type: node
+  Pass: ""
+
+# 缓存配置
+CacheConf:
+  - Host: localhost:6379
+    Type: node
+    Pass: ""
+
+# Kafka配置
+KafkaConf:
+  Brokers:
+    - localhost:9094
+  Topics:
+    judge_task: judge-tasks
+    status_update: status-updates
+    notification: notifications
+  Group: submission-service
+
+# JWT配置
+Auth:
+  AccessSecret: "your-submission-access-secret-key-make-it-longer-and-more-secure"
+  AccessExpire: 3600
+
+# 业务配置
+Business:
+  default_page_size: 20
+  max_page_size: 100
+  max_code_length: 65536
+  max_submission_per_minute: 10
+  max_file_size: 10485760 # 10MB
+  allowed_file_types:
+    - "text/plain"
+    - "application/x-zip-compressed"
+
+# WebSocket配置
+WebSocket:
+  read_timeout: 60     # 读取超时时间(秒)
+  write_timeout: 10    # 写入超时时间(秒)
+  heartbeat_interval: 30 # 心跳间隔(秒)
+  max_connections: 10000 # 最大连接数
+  buffer_size: 4096    # 缓冲区大小
+
+# 提交配置
+Submission:
+  supported_languages:
+    - name: cpp
+      display_name: "C++"
+      file_extension: ".cpp"
+      time_multiplier: 1.0
+      memory_multiplier: 1.0
+      enabled: true
+    - name: c
+      display_name: "C"
+      file_extension: ".c"
+      time_multiplier: 1.0
+      memory_multiplier: 1.0
+      enabled: true
+    - name: java
+      display_name: "Java"
+      file_extension: ".java"
+      time_multiplier: 2.0
+      memory_multiplier: 2.0
+      enabled: true
+    - name: python
+      display_name: "Python"
+      file_extension: ".py"
+      time_multiplier: 3.0
+      memory_multiplier: 1.5
+      enabled: true
+    - name: go
+      display_name: "Go"
+      file_extension: ".go"
+      time_multiplier: 1.5
+      memory_multiplier: 1.2
+      enabled: true
+    - name: javascript
+      display_name: "JavaScript"
+      file_extension: ".js"
+      time_multiplier: 2.5
+      memory_multiplier: 1.8
+      enabled: true
+  queue_size: 10000
+  max_retries: 3
+  retry_interval: 30
+  stats_retention_days: 90
+  export_max_rows: 100000
+  export_expire_hours: 24
+
+# 查重配置
+AntiCheat:
+  enabled: true
+  similarity_threshold: 0.85
+  batch_size: 1000
+  check_interval: 3600 # 1小时检查一次
+  algorithms:
+    enable_string_match: true
+    enable_ast_match: false
+    enable_feature_match: true
+    string_weight: 0.4
+    ast_weight: 0.3
+    feature_weight: 0.3
+  ml_model:
+    enabled: false
+    model_path: "/models/plagiarism-detector.model"
+    threshold: 0.7
+
+# 监控配置
+Monitor:
+  enable_metrics: true
+  metrics_interval: 60
+  enable_tracing: false
+  tracing_endpoint: "http://localhost:14268/api/traces"
+  enable_health_check: true
+
+# 日志配置
+Log:
+  Mode: file
+  Level: info
+  Path: logs/submission-api
+  MaxSize: 100
+  MaxAge: 30
+  MaxBackups: 5
+  Compress: true
+

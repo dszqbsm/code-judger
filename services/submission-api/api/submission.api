@@ -1,0 +1,162 @@
+syntax = "v1"
+
+info(
+    title: "提交服务API"
+    desc: "在线判题系统代码提交管理相关接口"
+    author: "OJ Team"
+    email: "dev@oj.local"
+    version: "v1.0"
+)
+
+import "types/submission.api"
+
+// ===========================================
+// API路由定义
+// ===========================================
+
+@server(
+    group: submission
+    prefix: /api/v1/submissions
+    middleware: Auth
+)
+service submission-api {
+    @doc(
+        summary: "创建代码提交"
+        description: "用户提交代码进行判题"
+    )
+    @handler createSubmission
+    post / (CreateSubmissionReq) returns (CreateSubmissionResp)
+    
+    @doc(
+        summary: "查询提交详情"
+        description: "获取特定提交的详细信息"
+    )
+    @handler getSubmission
+    get /:submission_id (GetSubmissionReq) returns (GetSubmissionResp)
+    
+    @doc(
+        summary: "查询提交列表"
+        description: "获取用户提交历史列表，支持分页和筛选"
+    )
+    @handler getSubmissionList
+    get / (GetSubmissionListReq) returns (GetSubmissionListResp)
+    
+    @doc(
+        summary: "取消提交"
+        description: "取消等待中的提交"
+    )
+    @handler cancelSubmission
+    delete /:submission_id (CancelSubmissionReq) returns (BaseResp)
+    
+    @doc(
+        summary: "高级提交查询"
+        description: "多条件搜索提交记录"
+    )
+    @handler searchSubmissions
+    get /search (SearchSubmissionsReq) returns (SearchSubmissionsResp)
+    
+    @doc(
+        summary: "获取用户提交统计"
+        description: "获取用户提交统计信息"
+    )
+    @handler getUserSubmissionStats
+    get /stats/user/:user_id (GetUserSubmissionStatsReq) returns (GetUserSubmissionStatsResp)
+    
+    @doc(
+        summary: "获取题目提交统计"
+        description: "获取题目提交统计信息"
+    )
+    @handler getProblemSubmissionStats
+    get /stats/problem/:problem_id (GetProblemSubmissionStatsReq) returns (GetProblemSubmissionStatsResp)
+    
+    @doc(
+        summary: "比较提交代码"
+        description: "比较两个提交的代码差异"
+    )
+    @handler compareSubmissions
+    post /compare (CompareSubmissionsReq) returns (CompareSubmissionsResp)
+}
+
+@server(
+    group: submission_internal
+    prefix: /api/v1/internal/submissions
+)
+service submission-api {
+    @doc(
+        summary: "更新提交状态"
+        description: "系统内部更新提交状态，由判题服务调用"
+    )
+    @handler updateSubmissionStatus
+    put /:submission_id/status (UpdateSubmissionStatusReq) returns (BaseResp)
+    
+    @doc(
+        summary: "批量更新提交状态"
+        description: "批量更新多个提交的状态"
+    )
+    @handler batchUpdateSubmissionStatus
+    put /batch/status (BatchUpdateSubmissionStatusReq) returns (BaseResp)
+}
+
+@server(
+    group: submission_admin
+    prefix: /api/v1/admin/submissions
+    middleware: Auth,AdminOnly
+)
+service submission-api {
+    @doc(
+        summary: "系统提交概览"
+        description: "获取系统提交概览统计"
+    )
+    @handler getSubmissionOverview
+    get /overview returns (GetSubmissionOverviewResp)
+    
+    @doc(
+        summary: "异常提交查询"
+        description: "查询异常提交记录"
+    )
+    @handler getAnomalousSubmissions
+    get /anomalies (GetAnomalousSubmissionsReq) returns (GetAnomalousSubmissionsResp)
+    
+    @doc(
+        summary: "批量重新判题"
+        description: "批量重新判题操作"
+    )
+    @handler batchRejudge
+    post /rejudge (BatchRejudgeReq) returns (BatchRejudgeResp)
+    
+    @doc(
+        summary: "提交数据导出"
+        description: "导出提交数据"
+    )
+    @handler exportSubmissions
+    get /export (ExportSubmissionsReq) returns (ExportSubmissionsResp)
+    
+    @doc(
+        summary: "代码相似度检测"
+        description: "检测代码抄袭和相似度"
+    )
+    @handler detectPlagiarism
+    post /plagiarism/detect (DetectPlagiarismReq) returns (DetectPlagiarismResp)
+}
+
+@server(
+    group: submission_ws
+    prefix: /ws/submissions
+    middleware: Auth
+)
+service submission-api {
+    @doc(
+        summary: "提交状态推送"
+        description: "实时推送提交状态变更"
+    )
+    @handler submissionStatusWebSocket
+    get /:submission_id/status returns
+    
+    @doc(
+        summary: "用户提交通知"
+        description: "推送用户相关提交通知"
+    )
+    @handler userSubmissionWebSocket
+    get /user/:user_id/notifications returns
+}
+
