@@ -1,8 +1,6 @@
 package svc
 
 import (
-	"time"
-
 	"github.com/online-judge/code-judger/services/judge-api/internal/client"
 	"github.com/online-judge/code-judger/services/judge-api/internal/config"
 	"github.com/online-judge/code-judger/services/judge-api/internal/judge"
@@ -64,36 +62,16 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		problemClient = client.NewMockProblemClient()
 		logx.Info("Using mock problem service client for development")
 	} else if c.ProblemService.RPC.Enabled {
-		// 优先使用RPC调用（推荐方式）
-		timeout := time.Duration(c.ProblemService.RPC.Timeout) * time.Millisecond
-		problemClient = client.NewZeroRpcProblemClient(
-			c.ProblemService.RPC.Endpoint,
-			timeout,
-		)
-		logx.Infof("Using RPC problem service client: %s (timeout: %v)",
-			c.ProblemService.RPC.Endpoint, timeout)
+		// RPC暂时使用Mock，等RPC服务完善后再启用
+		problemClient = client.NewMockProblemClient()
+		logx.Infof("RPC client not implemented yet, using mock client for problem service")
 	} else {
 		// 兼容HTTP调用（向后兼容）
-		timeout := time.Duration(c.ProblemService.HTTP.Timeout) * time.Second
-		baseClient := client.NewRealHttpProblemClient(
-			c.ProblemService.HTTP.Endpoint,
-			timeout,
-			"judge-service-token", // TODO: 从配置或环境变量获取
-		)
+		baseClient := client.NewHttpProblemClient(c.ProblemService.HTTP.Endpoint)
 
-		// 包装重试机制
-		if c.ProblemService.HTTP.MaxRetries > 0 {
-			problemClient = client.NewRetryableProblemClient(
-				baseClient,
-				c.ProblemService.HTTP.MaxRetries,
-				2*time.Second, // 重试间隔
-			)
-			logx.Infof("Using HTTP problem service client with %d retries: %s",
-				c.ProblemService.HTTP.MaxRetries, c.ProblemService.HTTP.Endpoint)
-		} else {
-			problemClient = baseClient
-			logx.Infof("Using HTTP problem service client: %s", c.ProblemService.HTTP.Endpoint)
-		}
+		// 暂时不使用重试机制，直接使用基础客户端
+		problemClient = baseClient
+		logx.Infof("Using HTTP problem service client: %s", c.ProblemService.HTTP.Endpoint)
 	}
 
 	return &ServiceContext{

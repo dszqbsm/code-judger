@@ -17,10 +17,19 @@ CREATE DATABASE IF NOT EXISTS oj_users
   CHARACTER SET utf8mb4 
   COLLATE utf8mb4_unicode_ci;
 
--- 创建数据库用户
+-- 创建数据库用户和配置远程连接权限
 CREATE USER IF NOT EXISTS 'oj_user'@'%' IDENTIFIED BY 'oj_password';
 GRANT ALL PRIVILEGES ON oj_system.* TO 'oj_user'@'%';
 GRANT ALL PRIVILEGES ON oj_users.* TO 'oj_user'@'%';
+
+-- 为root用户配置远程连接权限（开发环境）
+-- 注意：生产环境不建议开启root远程连接
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'oj_root_password';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+
+-- 修改现有root用户的host设置
+UPDATE mysql.user SET host='%' WHERE user='root' AND host='localhost';
+
 FLUSH PRIVILEGES;
 
 -- 使用用户数据库

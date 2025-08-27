@@ -1,0 +1,409 @@
+{
+  "info": {
+    "name": "判题服务API测试用例",
+    "description": "在线判题系统判题服务的完整API测试用例集合",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8889",
+      "type": "string"
+    },
+    {
+      "key": "submission_id",
+      "value": "1001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "判题接口",
+      "item": [
+        {
+          "name": "提交判题任务",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 1001,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"cpp\",\n  \"code\": \"#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    int a, b;\\n    cin >> a >> b;\\n    cout << a + b << endl;\\n    return 0;\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "提交C++代码进行判题"
+          },
+          "response": []
+        },
+        {
+          "name": "提交Python判题任务",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 1002,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"python\",\n  \"code\": \"# 两数相加\\na, b = map(int, input().split())\\nprint(a + b)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "提交Python代码进行判题"
+          },
+          "response": []
+        },
+        {
+          "name": "提交Java判题任务",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 1003,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"java\",\n  \"code\": \"import java.util.Scanner;\\n\\npublic class Main {\\n    public static void main(String[] args) {\\n        Scanner scanner = new Scanner(System.in);\\n        int a = scanner.nextInt();\\n        int b = scanner.nextInt();\\n        System.out.println(a + b);\\n        scanner.close();\\n    }\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "提交Java代码进行判题"
+          },
+          "response": []
+        },
+        {
+          "name": "查询判题结果",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/result/{{submission_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "result", "{{submission_id}}"]
+            },
+            "description": "根据提交ID查询判题结果"
+          },
+          "response": []
+        },
+        {
+          "name": "查询判题状态",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/status/{{submission_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "status", "{{submission_id}}"]
+            },
+            "description": "查询判题进度状态"
+          },
+          "response": []
+        },
+        {
+          "name": "取消判题任务",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/cancel/{{submission_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "cancel", "{{submission_id}}"]
+            },
+            "description": "取消指定的判题任务"
+          },
+          "response": []
+        },
+        {
+          "name": "重新判题",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/rejudge/{{submission_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "rejudge", "{{submission_id}}"]
+            },
+            "description": "重新执行指定的判题任务"
+          },
+          "response": []
+        }
+      ],
+      "description": "判题相关的核心API接口"
+    },
+    {
+      "name": "系统管理接口",
+      "item": [
+        {
+          "name": "获取判题节点状态",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/nodes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "nodes"]
+            },
+            "description": "获取所有判题节点的状态信息"
+          },
+          "response": []
+        },
+        {
+          "name": "获取判题队列状态",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "queue"]
+            },
+            "description": "获取判题队列的状态信息"
+          },
+          "response": []
+        },
+        {
+          "name": "健康检查",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "health"]
+            },
+            "description": "检查服务健康状态"
+          },
+          "response": []
+        },
+        {
+          "name": "获取支持的编程语言",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/languages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "languages"]
+            },
+            "description": "获取系统支持的所有编程语言配置"
+          },
+          "response": []
+        }
+      ],
+      "description": "系统管理和监控相关的API接口"
+    },
+    {
+      "name": "错误测试用例",
+      "item": [
+        {
+          "name": "无效的编程语言",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 2001,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"rust\",\n  \"code\": \"fn main() { println!(\\\"Hello World\\\"); }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "测试不支持的编程语言"
+          },
+          "response": []
+        },
+        {
+          "name": "缺少必填字段",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"cpp\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "测试缺少submission_id和code字段"
+          },
+          "response": []
+        },
+        {
+          "name": "查询不存在的提交",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/result/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "result", "999999"]
+            },
+            "description": "查询不存在的提交记录"
+          },
+          "response": []
+        }
+      ],
+      "description": "错误情况和边界条件的测试用例"
+    },
+    {
+      "name": "编译错误测试",
+      "item": [
+        {
+          "name": "C++编译错误",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 3001,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"cpp\",\n  \"code\": \"#include <iostream>\\nusing namespace std\\n\\nint main() {\\n    int a, b\\n    cin >> a >> b;\\n    cout << a + b << endl;\\n    return 0;\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "测试C++语法错误代码"
+          },
+          "response": []
+        },
+        {
+          "name": "Python语法错误",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 3002,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"python\",\n  \"code\": \"# 语法错误的Python代码\\na, b = map(int, input().split()\\nprint(a + b\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "测试Python语法错误代码"
+          },
+          "response": []
+        }
+      ],
+      "description": "编译错误和语法错误的测试用例"
+    },
+    {
+      "name": "运行时错误测试",
+      "item": [
+        {
+          "name": "无限循环",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 4001,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"cpp\",\n  \"code\": \"#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    while(true) {\\n        // 无限循环\\n    }\\n    return 0;\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "测试时间限制超时"
+          },
+          "response": []
+        },
+        {
+          "name": "内存超限",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 4002,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"cpp\",\n  \"code\": \"#include <iostream>\\n#include <vector>\\nusing namespace std;\\n\\nint main() {\\n    vector<int> v;\\n    while(true) {\\n        v.push_back(1);\\n    }\\n    return 0;\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "测试内存限制超时"
+          },
+          "response": []
+        },
+        {
+          "name": "运行时异常",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"submission_id\": 4003,\n  \"problem_id\": 101,\n  \"user_id\": 123,\n  \"language\": \"cpp\",\n  \"code\": \"#include <iostream>\\n#include <vector>\\nusing namespace std;\\n\\nint main() {\\n    vector<int> v;\\n    cout << v[100] << endl; // 越界访问\\n    return 0;\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/judge/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "judge", "submit"]
+            },
+            "description": "测试运行时错误"
+          },
+          "response": []
+        }
+      ],
+      "description": "运行时错误的测试用例"
+    }
+  ]
+}
+
