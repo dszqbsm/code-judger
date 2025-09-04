@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/config"
-	"github.com/online-judge/code-judger/services/judge-api/internal/languages"
-	"github.com/online-judge/code-judger/services/judge-api/internal/sandbox"
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/languages"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/sandbox"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -264,6 +264,10 @@ func (je *JudgeEngine) runTestCase(ctx context.Context, executor languages.Langu
 		errorOutput = string(errorData)
 	}
 
+	// 添加调试日志
+	logx.Infof("Debug: ErrorOutput length=%d, content='%s'", len(errorOutput), errorOutput)
+	logx.Infof("Debug: ExecResult.ErrorOutput length=%d, content='%s'", len(execResult.ErrorOutput), execResult.ErrorOutput)
+
 	// 创建测试用例结果
 	result := &types.TestCaseResult{
 		CaseId:      testCase.CaseId,
@@ -387,8 +391,13 @@ func (je *JudgeEngine) createTempDir(submissionID int64) (string, error) {
 	tempDir := filepath.Join(je.tempDir, fmt.Sprintf("judge_%d_%d",
 		submissionID, time.Now().UnixNano()))
 
-	if err := os.MkdirAll(tempDir, 0755); err != nil {
+	if err := os.MkdirAll(tempDir, 0777); err != nil {
 		return "", fmt.Errorf("failed to create temp directory: %w", err)
+	}
+
+	// 将目录所有权改为nobody用户，确保沙箱环境中的编译器能够写入
+	if err := os.Chown(tempDir, 65534, 65534); err != nil {
+		return "", fmt.Errorf("failed to change temp directory ownership: %w", err)
 	}
 
 	return tempDir, nil

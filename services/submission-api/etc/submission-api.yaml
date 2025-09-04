@@ -23,14 +23,19 @@ KafkaConf:
   Brokers:
     - localhost:9094
   Topics:
-    judge_task: judge-tasks
-    status_update: status-updates
+    judge_task: judge_tasks
+    status_update: judge_status
     notification: notifications
+    judge_result: judge_results
+    dead_letter: dead_letters
+  Groups:
+    submission_result: submission-result-group
+    status_update: status-update-group
   Group: submission-service
 
 # JWT配置
 Auth:
-  AccessSecret: "your-submission-access-secret-key-make-it-longer-and-more-secure"
+  AccessSecret: "oj-access-secret-key-2024"
   AccessExpire: 3600
 
 # 业务配置
@@ -43,6 +48,8 @@ Business:
   allowed_file_types:
     - "text/plain"
     - "application/x-zip-compressed"
+  average_judge_time: 30  # 平均判题时间（秒）
+  concurrent_judges: 5    # 并发判题服务器数量
 
 # WebSocket配置
 WebSocket:
@@ -133,4 +140,30 @@ Log:
   MaxAge: 30
   MaxBackups: 5
   Compress: true
+
+# 判题服务配置
+JudgeService:
+  Endpoint: "http://localhost:8890"  # 判题服务地址
+  Timeout: 30                        # 超时时间(秒)
+
+# Consul配置
+Consul:
+  enabled: true
+  address: "localhost:8500"
+  service_name: "submission-api"
+  service_id: "submission-api-1"
+  health_check_url: "http://172.17.0.1:8889/health"
+  health_interval: "10s"
+  health_timeout: "5s"
+  deregister_after: "1m"
+  tags:
+    - "submission"
+    - "api"
+
+# RPC配置
+RPC:
+  enabled: true   # 启用RPC调用
+  default_timeout: "10s"
+  max_retries: 3
+  retry_delay: "1s"
 

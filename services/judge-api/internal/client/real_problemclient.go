@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 

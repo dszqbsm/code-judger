@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/online-judge/code-judger/services/user-api/internal/config"
-	"github.com/online-judge/code-judger/services/user-api/internal/handler"
-	"github.com/online-judge/code-judger/services/user-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/handler"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"

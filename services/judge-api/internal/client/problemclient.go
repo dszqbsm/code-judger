@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -91,9 +91,24 @@ func NewHttpProblemClient(baseURL string) ProblemServiceClient {
 	}
 }
 
+func NewHttpProblemClientWithAuth(baseURL string, apiKey string) ProblemServiceClient {
+	return &HttpProblemClient{
+		baseURL: baseURL,
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+			Transport: &http.Transport{
+				MaxIdleConns:       100,
+				IdleConnTimeout:    90 * time.Second,
+				DisableCompression: false,
+			},
+		},
+		apiKey: apiKey,
+	}
+}
+
 func (c *HttpProblemClient) GetProblemDetail(ctx context.Context, problemId int64) (*types.ProblemInfo, error) {
-	// 1. 构建请求URL
-	url := fmt.Sprintf("%s/api/v1/problems/%d", c.baseURL, problemId)
+	// 1. 构建请求URL（使用内部接口）
+	url := fmt.Sprintf("%s/internal/v1/problems/%d", c.baseURL, problemId)
 
 	// 2. 创建HTTP请求
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -101,12 +116,10 @@ func (c *HttpProblemClient) GetProblemDetail(ctx context.Context, problemId int6
 		return nil, fmt.Errorf("创建HTTP请求失败: %w", err)
 	}
 
-	// 3. 设置请求头
+	// 3. 设置请求头（内部服务调用，使用内部API密钥）
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "judge-api/1.0.0")
-	if c.apiKey != "" {
-		req.Header.Set("X-Service-Token", c.apiKey)
-	}
+	req.Header.Set("X-Internal-API-Key", "internal-service-secret-key-2024") // 内部API密钥
 
 	// 4. 记录请求日志
 	startTime := time.Now()
@@ -146,25 +159,31 @@ func (c *HttpProblemClient) GetProblemDetail(ctx context.Context, problemId int6
 		return nil, fmt.Errorf("读取响应失败: %w", err)
 	}
 
-	// 9. 解析JSON响应（题目服务的响应结构）
+	// 9. 解析JSON响应（内部接口的响应结构）
 	var response struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 		Data    struct {
-			Id           int64    `json:"id"`
-			Title        string   `json:"title"`
-			Description  string   `json:"description"`
-			InputFormat  string   `json:"input_format"`
-			OutputFormat string   `json:"output_format"`
-			SampleInput  string   `json:"sample_input"`
-			SampleOutput string   `json:"sample_output"`
-			Difficulty   string   `json:"difficulty"`
-			TimeLimit    int      `json:"time_limit"`   // 毫秒
-			MemoryLimit  int      `json:"memory_limit"` // MB
-			Languages    []string `json:"languages"`
-			Tags         []string `json:"tags"`
-			CreatedAt    string   `json:"created_at"`
-			UpdatedAt    string   `json:"updated_at"`
+			Problem struct {
+				Id           int64    `json:"id"`
+				Title        string   `json:"title"`
+				Description  string   `json:"description"`
+				InputFormat  string   `json:"input_format"`
+				OutputFormat string   `json:"output_format"`
+				SampleInput  string   `json:"sample_input"`
+				SampleOutput string   `json:"sample_output"`
+				Difficulty   string   `json:"difficulty"`
+				TimeLimit    int      `json:"time_limit"`   // 毫秒
+				MemoryLimit  int      `json:"memory_limit"` // MB
+				Languages    []string `json:"languages"`
+				Tags         []string `json:"tags"`
+				IsPublic     bool     `json:"is_public"`
+				IsDeleted    bool     `json:"is_deleted"`
+				CreatedBy    int64    `json:"created_by"`
+				CreatedAt    string   `json:"created_at"`
+				UpdatedAt    string   `json:"updated_at"`
+			} `json:"problem"`
+			RequestedAt string `json:"requested_at"`
 		} `json:"data"`
 	}
 
@@ -179,44 +198,49 @@ func (c *HttpProblemClient) GetProblemDetail(ctx context.Context, problemId int6
 	}
 
 	// 11. 验证响应数据完整性
-	data := response.Data
-	if data.Id != problemId {
-		return nil, fmt.Errorf("题目ID不匹配: expected=%d, actual=%d", problemId, data.Id)
+	problemData := response.Data.Problem
+	if problemData.Id != problemId {
+		return nil, fmt.Errorf("题目ID不匹配: expected=%d, actual=%d", problemId, problemData.Id)
 	}
 
-	if data.Title == "" {
+	if problemData.Title == "" {
 		return nil, fmt.Errorf("题目标题为空")
 	}
 
-	if data.TimeLimit <= 0 || data.TimeLimit > 30000 {
-		return nil, fmt.Errorf("时间限制不合理: %dms", data.TimeLimit)
+	if problemData.TimeLimit <= 0 || problemData.TimeLimit > 30000 {
+		return nil, fmt.Errorf("时间限制不合理: %dms", problemData.TimeLimit)
 	}
 
-	if data.MemoryLimit <= 0 || data.MemoryLimit > 1024 {
-		return nil, fmt.Errorf("内存限制不合理: %dMB", data.MemoryLimit)
+	if problemData.MemoryLimit <= 0 || problemData.MemoryLimit > 1024 {
+		return nil, fmt.Errorf("内存限制不合理: %dMB", problemData.MemoryLimit)
 	}
 
-	if len(data.Languages) == 0 {
+	if len(problemData.Languages) == 0 {
 		return nil, fmt.Errorf("支持的编程语言列表为空")
 	}
 
-	// 12. 获取测试用例（从数据库或单独的接口获取）
+	// 检查题目是否已删除
+	if problemData.IsDeleted {
+		logx.WithContext(ctx).Infof("题目已删除，但继续处理: ProblemId=%d", problemId)
+	}
+
+	// 12. 获取测试用例（从新的内部接口获取）
 	testCases, err := c.getTestCases(ctx, problemId)
 	if err != nil {
 		logx.WithContext(ctx).Errorf("获取测试用例失败: %v", err)
 		// 如果获取测试用例失败，使用样例数据作为测试用例
-		testCases = c.createSampleTestCase(data.SampleInput, data.SampleOutput)
+		testCases = c.createSampleTestCase(problemData.SampleInput, problemData.SampleOutput)
 	}
 
 	// 13. 转换为判题服务内部结构
 	problemInfo := &types.ProblemInfo{
-		ProblemId:   data.Id,
-		Title:       data.Title,
-		TimeLimit:   data.TimeLimit,
-		MemoryLimit: data.MemoryLimit,
-		Languages:   data.Languages,
+		ProblemId:   problemData.Id,
+		Title:       problemData.Title,
+		TimeLimit:   problemData.TimeLimit,
+		MemoryLimit: problemData.MemoryLimit,
+		Languages:   problemData.Languages,
 		TestCases:   testCases,
-		IsPublic:    true, // 题目服务暂时没有这个字段，默认为true
+		IsPublic:    problemData.IsPublic, // 现在可以从内部接口获取真实状态
 	}
 
 	// 14. 记录成功日志
@@ -226,10 +250,10 @@ func (c *HttpProblemClient) GetProblemDetail(ctx context.Context, problemId int6
 	return problemInfo, nil
 }
 
-// 获取测试用例（从题目服务的专门接口或数据库获取）
+// 获取测试用例（从题目服务的内部接口获取）
 func (c *HttpProblemClient) getTestCases(ctx context.Context, problemId int64) ([]types.TestCase, error) {
-	// 方案1: 调用题目服务的测试用例接口
-	url := fmt.Sprintf("%s/api/v1/problems/%d/testcases", c.baseURL, problemId)
+	// 调用题目服务的内部测试用例接口
+	url := fmt.Sprintf("%s/internal/v1/problems/%d/test-cases?include_hidden=true", c.baseURL, problemId)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -237,7 +261,8 @@ func (c *HttpProblemClient) getTestCases(ctx context.Context, problemId int64) (
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Service-Token", c.apiKey)
+	req.Header.Set("User-Agent", "judge-api/1.0.0")
+	req.Header.Set("X-Internal-API-Key", "internal-service-secret-key-2024") // 内部API密钥
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -259,13 +284,18 @@ func (c *HttpProblemClient) getTestCases(ctx context.Context, problemId int64) (
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 		Data    struct {
-			TestCases []struct {
-				CaseId         int    `json:"case_id"`
-				Input          string `json:"input"`
+			ProblemId     int64 `json:"problem_id"`
+			TotalCount    int   `json:"total_count"`
+			IncludeHidden bool  `json:"include_hidden"`
+			TestCases     []struct {
+				Id             int64  `json:"id"`
+				InputData      string `json:"input_data"`
 				ExpectedOutput string `json:"expected_output"`
-				TimeLimit      int    `json:"time_limit,omitempty"`
-				MemoryLimit    int    `json:"memory_limit,omitempty"`
+				IsSample       bool   `json:"is_sample"`
+				Score          int    `json:"score"`
+				SortOrder      int    `json:"sort_order"`
 			} `json:"test_cases"`
+			RequestedAt string `json:"requested_at"`
 		} `json:"data"`
 	}
 
@@ -281,11 +311,11 @@ func (c *HttpProblemClient) getTestCases(ctx context.Context, problemId int64) (
 	testCases := make([]types.TestCase, len(response.Data.TestCases))
 	for i, tc := range response.Data.TestCases {
 		testCases[i] = types.TestCase{
-			CaseId:         tc.CaseId,
-			Input:          tc.Input,
+			CaseId:         int(tc.Id),         // 转换为int类型
+			Input:          tc.InputData,       // 字段名更新
 			ExpectedOutput: tc.ExpectedOutput,
-			TimeLimit:      tc.TimeLimit,
-			MemoryLimit:    tc.MemoryLimit,
+			TimeLimit:      0, // 使用全局时间限制
+			MemoryLimit:    0, // 使用全局内存限制
 		}
 	}
 

@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	judge "github.com/online-judge/code-judger/services/judge-api/internal/handler/judge"
-	system "github.com/online-judge/code-judger/services/judge-api/internal/handler/system"
-	"github.com/online-judge/code-judger/services/judge-api/internal/svc"
+	judge "github.com/dszqbsm/code-judger/services/judge-api/internal/handler/judge"
+	system "github.com/dszqbsm/code-judger/services/judge-api/internal/handler/system"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )

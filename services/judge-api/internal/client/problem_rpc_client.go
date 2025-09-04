@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"

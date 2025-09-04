@@ -3,9 +3,9 @@ package problem
 import (
 	"net/http"
 
-	"github.com/online-judge/code-judger/services/problem-api/internal/logic/problem"
-	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
-	"github.com/online-judge/code-judger/services/problem-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/logic/problem"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/types"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )

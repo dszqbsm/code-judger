@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/config"
-	"github.com/online-judge/code-judger/services/judge-api/internal/judge"
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/judge"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -183,6 +183,9 @@ func (s *TaskScheduler) Start() error {
 	// 启动任务分发器
 	go s.dispatch()
 
+	// 启动任务分配器（从taskQueue分发给workers）
+	go s.distributeToWorkers()
+
 	// 启动统计更新器
 	go s.updateStats()
 
@@ -307,7 +310,52 @@ func (s *TaskScheduler) GetQueueStatus() *QueueStatus {
 	}
 }
 
-// 任务分发器
+// 获取任务在队列中的位置
+func (s *TaskScheduler) GetTaskPosition(taskID string) (int, error) {
+	s.priorityQueue.mutex.Lock()
+	defer s.priorityQueue.mutex.Unlock()
+
+	// 在优先级队列中查找任务位置
+	for i, task := range s.priorityQueue.tasks {
+		if task.ID == taskID && task.Status == TaskStatusPending {
+			return i + 1, nil // 返回1基的位置
+		}
+	}
+
+	return 0, fmt.Errorf("task not found in queue: %s", taskID)
+}
+
+// 根据提交ID查找任务
+func (s *TaskScheduler) FindTaskBySubmissionID(submissionID int64) (*JudgeTask, error) {
+	// 1. 先在优先级队列中查找（等待中的任务）
+	s.priorityQueue.mutex.Lock()
+	for _, task := range s.priorityQueue.tasks {
+		if task.SubmissionID == submissionID {
+			s.priorityQueue.mutex.Unlock()
+			return task, nil
+		}
+	}
+	s.priorityQueue.mutex.Unlock()
+
+	// 2. 在所有任务映射中查找（包括运行中和已完成的任务）
+	var foundTask *JudgeTask
+	s.tasks.Range(func(key, value interface{}) bool {
+		task := value.(*JudgeTask)
+		if task.SubmissionID == submissionID {
+			foundTask = task
+			return false // 停止遍历
+		}
+		return true // 继续遍历
+	})
+
+	if foundTask != nil {
+		return foundTask, nil
+	}
+
+	return nil, fmt.Errorf("task not found for submission_id: %d", submissionID)
+}
+
+// 任务分发器（从优先级队列到taskQueue）
 func (s *TaskScheduler) dispatch() {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
@@ -328,14 +376,60 @@ func (s *TaskScheduler) dispatch() {
 				continue
 			}
 
-			// 尝试分配给空闲的工作器
+			// 尝试分配到任务队列
 			select {
 			case s.taskQueue <- task:
-				// 成功分配任务
+				// 成功分配任务到队列
+				logx.Infof("Task %s dispatched to queue", task.ID)
 			default:
 				// 队列已满，重新加入优先级队列
 				s.priorityQueue.Push(task)
 			}
+		}
+	}
+}
+
+// 任务分配器（从taskQueue分发给workers）
+func (s *TaskScheduler) distributeToWorkers() {
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case task := <-s.taskQueue:
+			// 检查任务是否已取消
+			if task.Status == TaskStatusCancelled {
+				continue
+			}
+
+			// 寻找空闲的worker
+			distributed := false
+			for _, worker := range s.workers {
+				select {
+				case worker.TaskChan <- task:
+					// 成功分配给worker
+					logx.Infof("Task %s distributed to worker %d", task.ID, worker.ID)
+					atomic.AddInt64(&s.stats.PendingTasks, -1)
+					atomic.AddInt64(&s.stats.RunningTasks, 1)
+					distributed = true
+					goto nextTask
+				default:
+					// 这个worker忙，尝试下一个
+					continue
+				}
+			}
+
+			// 如果没有空闲worker，重新放回队列
+			if !distributed {
+				select {
+				case s.taskQueue <- task:
+					// 重新放回队列
+				default:
+					// 队列已满，放回优先级队列
+					s.priorityQueue.Push(task)
+				}
+			}
+
+		nextTask:
 		}
 	}
 }

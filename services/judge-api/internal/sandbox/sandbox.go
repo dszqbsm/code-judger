@@ -640,6 +640,18 @@ func (s *SystemCallSandbox) monitorProcessWithCgroups(pid int, startTime time.Ti
 		}
 	}
 
+	// 读取错误输出
+	if s.config.ErrorFile != "" {
+		if errorData, err := os.ReadFile(s.config.ErrorFile); err == nil {
+			result.ErrorOutput = string(errorData)
+			logx.Infof("Debug: Read error file %s, length=%d, content='%s'", s.config.ErrorFile, len(result.ErrorOutput), result.ErrorOutput)
+		} else {
+			logx.Errorf("Debug: Failed to read error file %s: %v", s.config.ErrorFile, err)
+		}
+	} else {
+		logx.Infof("Debug: ErrorFile not configured")
+	}
+
 	return result, nil
 }
 
@@ -832,6 +844,18 @@ func (s *SystemCallSandbox) monitorProcess(pid int, startTime time.Time) (*Execu
 				result.Status = StatusOutputLimitExceeded
 			}
 		}
+	}
+
+	// 读取错误输出
+	if s.config.ErrorFile != "" {
+		if errorData, err := os.ReadFile(s.config.ErrorFile); err == nil {
+			result.ErrorOutput = string(errorData)
+			logx.Infof("Debug: Read error file %s, length=%d, content='%s'", s.config.ErrorFile, len(result.ErrorOutput), result.ErrorOutput)
+		} else {
+			logx.Errorf("Debug: Failed to read error file %s: %v", s.config.ErrorFile, err)
+		}
+	} else {
+		logx.Infof("Debug: ErrorFile not configured")
 	}
 
 	return result, nil

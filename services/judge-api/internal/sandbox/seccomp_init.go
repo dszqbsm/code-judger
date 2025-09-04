@@ -44,21 +44,39 @@ func (s *SystemCallSandbox) createSeccompInitializer(executable string, args []s
 		return "", fmt.Errorf("failed to write seccomp config: %w", err)
 	}
 
-	// 2. 创建seccomp初始化程序源码
-	initializerPath := filepath.Join(workDir, "seccomp_init.go")
-	initializerSource := s.generateSeccompInitializerSource(executable, args, configPath)
+	// 确保配置文件权限正确
+	if err := os.Chown(configPath, 65534, 65534); err != nil {
+		logx.Errorf("Failed to change ownership of seccomp config: %v", err)
+	}
+
+	// 2. 创建C语言版本的seccomp初始化程序源码
+	initializerPath := filepath.Join(workDir, "seccomp_init.c")
+	initializerSource := s.generateCSeccompInitializerSource(executable, args, configPath)
 
 	if err := os.WriteFile(initializerPath, []byte(initializerSource), 0644); err != nil {
 		return "", fmt.Errorf("failed to write seccomp initializer: %w", err)
 	}
 
-	// 3. 编译seccomp初始化程序
+	// 确保seccomp初始化程序源码文件权限正确
+	if err := os.Chown(initializerPath, 65534, 65534); err != nil {
+		logx.Errorf("Failed to change ownership of seccomp initializer source: %v", err)
+	}
+
+	// 3. 编译C语言版本的seccomp初始化程序，链接libseccomp库
 	binaryPath := filepath.Join(workDir, "seccomp_init")
-	cmd := exec.Command("go", "build", "-o", binaryPath, initializerPath)
+	cmd := exec.Command("gcc", "-o", binaryPath, initializerPath, "-lseccomp")
 	cmd.Dir = workDir
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("failed to compile seccomp initializer: %w, output: %s", err, string(output))
+	}
+
+	// 确保编译后的二进制文件权限正确
+	if err := os.Chmod(binaryPath, 0755); err != nil {
+		logx.Errorf("Failed to change permissions of seccomp initializer binary: %v", err)
+	}
+	if err := os.Chown(binaryPath, 65534, 65534); err != nil {
+		logx.Errorf("Failed to change ownership of seccomp initializer binary: %v", err)
 	}
 
 	logx.Infof("Created seccomp initializer: %s", binaryPath)
@@ -81,6 +99,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"syscall"
 	"unsafe"
 )
@@ -126,6 +145,10 @@ type BPFProgram struct {
 }
 
 func main() {
+	// 设置Go运行时内存优化
+	debug.SetGCPercent(10)        // 降低GC触发阈值
+	debug.SetMemoryLimit(32 << 20) // 设置32MB内存限制
+	
 	// 1. 读取seccomp配置
 	configData, err := os.ReadFile("%s")
 	if err != nil {
@@ -256,6 +279,7 @@ func (s *SystemCallSandbox) cleanupSeccompFiles(workDir string) {
 	files := []string{
 		"seccomp_config.json",
 		"seccomp_init.go",
+		"seccomp_init.c",
 		"seccomp_init",
 	}
 
@@ -265,4 +289,256 @@ func (s *SystemCallSandbox) cleanupSeccompFiles(workDir string) {
 			logx.Errorf("Failed to cleanup seccomp file %s: %v", path, err)
 		}
 	}
+}
+
+// 生成C语言版本的seccomp初始化程序源码
+func (s *SystemCallSandbox) generateCSeccompInitializerSource(executable string, args []string, configPath string) string {
+	// 构建参数列表 - 如果没有参数就不添加额外的参数
+	argsStr := ""
+	if len(args) > 0 {
+		for _, arg := range args {
+			argsStr += fmt.Sprintf(`, "%s"`, arg)
+		}
+	}
+
+	source := fmt.Sprintf(`#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <seccomp.h>
+
+int main() {
+    scmp_filter_ctx ctx;
+    
+    // 创建seccomp上下文，默认动作是杀死进程
+    ctx = seccomp_init(SCMP_ACT_KILL);
+    if (ctx == NULL) {
+        perror("seccomp_init");
+        return 1;
+    }
+    
+    // 允许基本的系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0) < 0) {
+        perror("seccomp_rule_add(read)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0) < 0) {
+        perror("seccomp_rule_add(write)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit), 0) < 0) {
+        perror("seccomp_rule_add(exit)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0) < 0) {
+        perror("seccomp_rule_add(exit_group)");
+        goto cleanup;
+    }
+    
+    // 内存管理系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(brk), 0) < 0) {
+        perror("seccomp_rule_add(brk)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0) < 0) {
+        perror("seccomp_rule_add(mmap)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0) < 0) {
+        perror("seccomp_rule_add(munmap)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mremap), 0) < 0) {
+        perror("seccomp_rule_add(mremap)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mprotect), 0) < 0) {
+        perror("seccomp_rule_add(mprotect)");
+        goto cleanup;
+    }
+    
+    // 文件和I/O系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 0) < 0) {
+        perror("seccomp_rule_add(open)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(openat), 0) < 0) {
+        perror("seccomp_rule_add(openat)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(close), 0) < 0) {
+        perror("seccomp_rule_add(close)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(lseek), 0) < 0) {
+        perror("seccomp_rule_add(lseek)");
+        goto cleanup;
+    }
+    
+    // 进程和信号系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigaction), 0) < 0) {
+        perror("seccomp_rule_add(rt_sigaction)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigprocmask), 0) < 0) {
+        perror("seccomp_rule_add(rt_sigprocmask)");
+        goto cleanup;
+    }
+    
+    // 获取系统信息
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(arch_prctl), 0) < 0) {
+        perror("seccomp_rule_add(arch_prctl)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(uname), 0) < 0) {
+        perror("seccomp_rule_add(uname)");
+        goto cleanup;
+    }
+    
+    // 执行程序系统调用 - 这是关键的缺失调用！
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(execve), 0) < 0) {
+        perror("seccomp_rule_add(execve)");
+        goto cleanup;
+    }
+    
+    // 文件访问权限检查系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(access), 0) < 0) {
+        perror("seccomp_rule_add(access)");
+        goto cleanup;
+    }
+    
+    // 获取文件状态信息系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0) < 0) {
+        perror("seccomp_rule_add(newfstatat)");
+        goto cleanup;
+    }
+    
+    // 其他可能需要的文件系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fstat), 0) < 0) {
+        perror("seccomp_rule_add(fstat)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(stat), 0) < 0) {
+        perror("seccomp_rule_add(stat)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(lstat), 0) < 0) {
+        perror("seccomp_rule_add(lstat)");
+        goto cleanup;
+    }
+    
+    // 指定偏移量读取文件系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pread64), 0) < 0) {
+        perror("seccomp_rule_add(pread64)");
+        goto cleanup;
+    }
+    
+    // 其他可能需要的读写系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pwrite64), 0) < 0) {
+        perror("seccomp_rule_add(pwrite64)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(readv), 0) < 0) {
+        perror("seccomp_rule_add(readv)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(writev), 0) < 0) {
+        perror("seccomp_rule_add(writev)");
+        goto cleanup;
+    }
+    
+    // 线程相关系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_tid_address), 0) < 0) {
+        perror("seccomp_rule_add(set_tid_address)");
+        goto cleanup;
+    }
+    
+    // 其他常见的程序运行时系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_robust_list), 0) < 0) {
+        perror("seccomp_rule_add(set_robust_list)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rseq), 0) < 0) {
+        perror("seccomp_rule_add(rseq)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(prlimit64), 0) < 0) {
+        perror("seccomp_rule_add(prlimit64)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getrandom), 0) < 0) {
+        perror("seccomp_rule_add(getrandom)");
+        goto cleanup;
+    }
+    
+    // 用户空间同步原语系统调用 - 非常重要！
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(futex), 0) < 0) {
+        perror("seccomp_rule_add(futex)");
+        goto cleanup;
+    }
+    
+    // 其他可能需要的进程管理系统调用
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getpid), 0) < 0) {
+        perror("seccomp_rule_add(getpid)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(gettid), 0) < 0) {
+        perror("seccomp_rule_add(gettid)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getuid), 0) < 0) {
+        perror("seccomp_rule_add(getuid)");
+        goto cleanup;
+    }
+    
+    if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(getgid), 0) < 0) {
+        perror("seccomp_rule_add(getgid)");
+        goto cleanup;
+    }
+    
+    // 加载seccomp过滤器
+    if (seccomp_load(ctx) < 0) {
+        perror("seccomp_load");
+        goto cleanup;
+    }
+    
+    // 释放上下文
+    seccomp_release(ctx);
+    
+    // 执行目标程序
+    char *argv[] = {"%s"%s, NULL};
+    execv("%s", argv);
+    
+    // 如果execv失败
+    perror("execv");
+    return 1;
+    
+cleanup:
+    seccomp_release(ctx);
+    return 1;
+}`, executable, argsStr, executable)
+
+	return source
 }

@@ -1,0 +1,10 @@
+Starting submission server at 0.0.0.0:8889...
+panic: listen tcp 0.0.0.0:8889: bind: address already in use
+
+goroutine 1 [running]:
+github.com/zeromicro/go-zero/rest.handleError({0x133eb00, 0xc000201cc0})
+	/root/go/pkg/mod/github.com/zeromicro/go-zero@v1.9.0/rest/server.go:334 +0x9d
+github.com/zeromicro/go-zero/rest.(*Server).Start(0x133e720?)
+	/root/go/pkg/mod/github.com/zeromicro/go-zero@v1.9.0/rest/server.go:102 +0x2d
+main.main()
+	/opt/go-project/code-judger/services/submission-api/main.go:44 +0x349

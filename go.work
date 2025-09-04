@@ -1,10 +1,14 @@
-go 1.21
+go 1.23.8
+
+toolchain go1.24.2
 
 use (
 	.
+	./common
 	./services/judge-api
 	./services/problem-api
 	./services/submission-api
 	./services/user-api
 	./services/user-rpc
+	./test
 )

@@ -3,9 +3,9 @@ package system
 import (
 	"net/http"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/logic/system"
-	"github.com/online-judge/code-judger/services/judge-api/internal/svc"
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/logic/system"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 

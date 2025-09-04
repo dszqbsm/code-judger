@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/online-judge/code-judger/services/user-rpc/internal/config"
-	"github.com/online-judge/code-judger/services/user-rpc/internal/server"
-	"github.com/online-judge/code-judger/services/user-rpc/internal/svc"
-	"github.com/online-judge/code-judger/services/user-rpc/pb"
+	"github.com/dszqbsm/code-judger/services/user-rpc/internal/config"
+	"github.com/dszqbsm/code-judger/services/user-rpc/internal/server"
+	"github.com/dszqbsm/code-judger/services/user-rpc/internal/svc"
+	"github.com/dszqbsm/code-judger/services/user-rpc/pb"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"

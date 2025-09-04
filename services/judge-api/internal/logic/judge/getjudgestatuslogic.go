@@ -2,32 +2,36 @@ package judge
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/scheduler"
-	"github.com/online-judge/code-judger/services/judge-api/internal/svc"
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/service"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetJudgeStatusLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx         context.Context
+	svcCtx      *svc.ServiceContext
+	taskService *service.TaskService
 }
 
 func NewGetJudgeStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetJudgeStatusLogic {
 	return &GetJudgeStatusLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:      logx.WithContext(ctx),
+		ctx:         ctx,
+		svcCtx:      svcCtx,
+		taskService: service.NewTaskService(ctx, svcCtx),
 	}
 }
 
 func (l *GetJudgeStatusLogic) GetJudgeStatus(req *types.GetJudgeStatusReq) (resp *types.GetJudgeStatusResp, err error) {
-	// 验证提交ID
+	l.Logger.Infof("开始获取判题状态: SubmissionID=%d", req.SubmissionId)
+
+	// 1. 验证提交ID
 	if req.SubmissionId <= 0 {
+		l.Logger.Errorf("无效的提交ID: %d", req.SubmissionId)
 		return &types.GetJudgeStatusResp{
 			BaseResp: types.BaseResp{
 				Code:    400,
@@ -36,10 +40,10 @@ func (l *GetJudgeStatusLogic) GetJudgeStatus(req *types.GetJudgeStatusReq) (resp
 		}, nil
 	}
 
-	// 查找任务
-	task, err := l.findTaskBySubmissionId(req.SubmissionId)
+	// 2. 从任务服务获取任务信息（真实业务逻辑）
+	task, err := l.taskService.FindTaskBySubmissionID(req.SubmissionId)
 	if err != nil {
-		logx.Errorf("Failed to find task for submission %d: %v", req.SubmissionId, err)
+		l.Logger.Errorf("未找到提交ID %d 的判题任务: %v", req.SubmissionId, err)
 		return &types.GetJudgeStatusResp{
 			BaseResp: types.BaseResp{
 				Code:    404,
@@ -48,97 +52,90 @@ func (l *GetJudgeStatusLogic) GetJudgeStatus(req *types.GetJudgeStatusReq) (resp
 		}, nil
 	}
 
-	// 计算进度
-	progress := l.calculateProgress(task)
+	// 3. TODO: 权限验证（需要从JWT或请求中获取用户信息）
+	// userID := getUserIDFromContext(l.ctx)
+	// userRole := getUserRoleFromContext(l.ctx)
+	// if err := l.taskService.ValidateTaskAccess(task, userID, userRole); err != nil {
+	//     l.Logger.Errorf("用户权限验证失败: %v", err)
+	//     return &types.GetJudgeStatusResp{
+	//         BaseResp: types.BaseResp{
+	//             Code:    403,
+	//             Message: "权限不足：无法查看该判题状态",
+	//         },
+	//     }, nil
+	// }
 
-	// 确定当前测试用例和总数
+	// 4. 计算任务执行进度
+	progress := l.taskService.CalculateTaskProgress(task)
+
+	// 5. 确定当前测试用例和总数
 	currentTestCase := 0
 	totalTestCases := len(task.TestCases)
 
-	if task.Result != nil {
+	if task.Result != nil && len(task.Result.TestCases) > 0 {
 		currentTestCase = len(task.Result.TestCases)
 	}
 
-	// 生成状态消息
-	message := l.generateStatusMessage(task.Status, currentTestCase, totalTestCases)
+	// 6. 生成状态消息
+	message := l.taskService.GenerateTaskStatusMessage(task)
 
-	logx.Infof("Retrieved judge status for submission %d: status=%s, progress=%d%%",
-		req.SubmissionId, task.Status, progress)
+	// 7. 获取队列位置信息（如果任务还在等待中）
+	var queuePosition *int
+	var estimatedTime *int
+	
+	if task.Status == "pending" {
+		if pos, err := l.svcCtx.TaskScheduler.GetTaskPosition(task.ID); err == nil {
+			queuePosition = &pos
+			// 简单估算等待时间（位置 * 平均执行时间）
+			avgTime := 30 // 30秒平均执行时间
+			estimated := pos * avgTime
+			estimatedTime = &estimated
+		}
+	}
+
+	// 8. 记录成功日志
+	l.Logger.Infof("成功获取判题状态: SubmissionID=%d, Status=%s, Progress=%d%%, CurrentCase=%d/%d",
+		req.SubmissionId, task.Status, progress, currentTestCase, totalTestCases)
+
+	// 9. 构建响应数据
+	judgeStatus := types.JudgeStatus{
+		SubmissionId:    req.SubmissionId,
+		Status:          task.Status,
+		Progress:        progress,
+		CurrentTestCase: currentTestCase,
+		TotalTestCases:  totalTestCases,
+		Message:         message,
+	}
+
+	// 添加队列信息（如果有）
+	if queuePosition != nil {
+		judgeStatus.QueuePosition = queuePosition
+	}
+	if estimatedTime != nil {
+		judgeStatus.EstimatedTime = estimatedTime
+	}
+
+	// 添加错误信息（如果有）
+	if task.Error != "" {
+		judgeStatus.ErrorMessage = &task.Error
+	}
+
+	// 添加执行时间信息（如果任务正在运行或已完成）
+	if task.StartedAt != nil {
+		startTime := task.StartedAt.Format("2006-01-02T15:04:05Z07:00")
+		judgeStatus.StartTime = &startTime
+	}
+
+	if task.CompletedAt != nil {
+		endTime := task.CompletedAt.Format("2006-01-02T15:04:05Z07:00")
+		judgeStatus.EndTime = &endTime
+	}
 
 	return &types.GetJudgeStatusResp{
 		BaseResp: types.BaseResp{
 			Code:    200,
 			Message: "获取成功",
 		},
-		Data: types.JudgeStatus{
-			SubmissionId:    req.SubmissionId,
-			Status:          task.Status,
-			Progress:        progress,
-			CurrentTestCase: currentTestCase,
-			TotalTestCases:  totalTestCases,
-			Message:         message,
-		},
+		Data: judgeStatus,
 	}, nil
-}
-
-// 根据提交ID查找任务
-func (l *GetJudgeStatusLogic) findTaskBySubmissionId(submissionId int64) (*scheduler.JudgeTask, error) {
-	// TODO: 实现高效的任务查找
-	// 这里简化实现，返回模拟数据
-	return &scheduler.JudgeTask{
-		SubmissionID: submissionId,
-		Status:       "running",
-		TestCases: []*types.TestCase{
-			{CaseId: 1, Input: "test1", ExpectedOutput: "output1"},
-			{CaseId: 2, Input: "test2", ExpectedOutput: "output2"},
-			{CaseId: 3, Input: "test3", ExpectedOutput: "output3"},
-		},
-		Result: &types.JudgeResult{
-			TestCases: []types.TestCaseResult{
-				{CaseId: 1, Status: "accepted"},
-			},
-		},
-	}, nil
-}
-
-// 计算判题进度
-func (l *GetJudgeStatusLogic) calculateProgress(task *scheduler.JudgeTask) int {
-	switch task.Status {
-	case "pending":
-		return 0
-	case "running":
-		if task.Result != nil && len(task.TestCases) > 0 {
-			completed := len(task.Result.TestCases)
-			total := len(task.TestCases)
-			return (completed * 100) / total
-		}
-		return 10 // 至少10%表示已开始
-	case "completed":
-		return 100
-	case "failed", "cancelled":
-		return 100
-	default:
-		return 0
-	}
-}
-
-// 生成状态消息
-func (l *GetJudgeStatusLogic) generateStatusMessage(status string, current, total int) string {
-	switch status {
-	case "pending":
-		return "等待判题中..."
-	case "running":
-		if current > 0 {
-			return fmt.Sprintf("正在执行测试用例 %d/%d", current, total)
-		}
-		return "正在编译代码..."
-	case "completed":
-		return "判题完成"
-	case "failed":
-		return "判题失败"
-	case "cancelled":
-		return "判题已取消"
-	default:
-		return "未知状态"
-	}
 }

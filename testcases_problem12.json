@@ -1,0 +1,43 @@
+{
+  "problem_id": 12,
+  "replace_all": true,
+  "test_cases": [
+    {
+      "input_data": "4\n2 7 11 15\n9",
+      "expected_output": "0 1",
+      "is_sample": true,
+      "score": 20,
+      "sort_order": 1
+    },
+    {
+      "input_data": "3\n3 2 4\n6",
+      "expected_output": "1 2",
+      "is_sample": false,
+      "score": 30,
+      "sort_order": 2
+    },
+    {
+      "input_data": "2\n3 3\n6",
+      "expected_output": "0 1",
+      "is_sample": false,
+      "score": 25,
+      "sort_order": 3
+    },
+    {
+      "input_data": "5\n1 2 3 4 5\n8",
+      "expected_output": "2 4",
+      "is_sample": false,
+      "score": 25,
+      "sort_order": 4
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+

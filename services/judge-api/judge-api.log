@@ -1,2 +1,3 @@
 nohup: 忽略输入
-nohup: 无法运行命令 './judge-api': 没有那个文件或目录
+Starting judge server at 0.0.0.0:8890...
+{"@timestamp":"2025-09-03T13:06:10.613+08:00","caller":"messagequeue/consumer.go:110","content":"Kafka consumer context cancelled, stopping consumer","level":"info"}

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
-	"github.com/online-judge/code-judger/services/problem-api/internal/types"
-	"github.com/online-judge/code-judger/services/problem-api/models"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/problem-api/models"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

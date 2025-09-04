@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest"
@@ -41,20 +43,37 @@ type Config struct {
 
 	// 监控配置
 	Monitor MonitorConf `json:",omitempty"`
+
+	// 判题服务配置
+	JudgeService JudgeServiceConf
+
+	// Consul配置
+	Consul ConsulConf
+
+	// RPC配置
+	RPC RPCConf
 }
 
 // Kafka配置
 type KafkaConf struct {
-	Brokers []string  `json:"brokers"`
-	Topics  TopicConf `json:"topics"`
-	Group   string    `json:"group"`
+	Brokers []string   `json:"brokers"`
+	Topics  TopicConf  `json:"topics"`
+	Groups  GroupConf  `json:"groups"`
 }
 
 // 主题配置
 type TopicConf struct {
-	JudgeTask    string `json:"judge_task"`
-	StatusUpdate string `json:"status_update"`
-	Notification string `json:"notification"`
+	JudgeTask      string `json:"judge_task"`
+	JudgeResult    string `json:"judge_result"`
+	StatusUpdate   string `json:"status_update"`
+	Notification   string `json:"notification"`
+	DeadLetter     string `json:"dead_letter"`
+}
+
+// 消费者组配置
+type GroupConf struct {
+	SubmissionResult string `json:"submission_result"`
+	StatusUpdate     string `json:"status_update"`
 }
 
 // 业务配置
@@ -66,6 +85,10 @@ type BusinessConf struct {
 	// 代码限制
 	MaxCodeLength          int `json:"max_code_length"`
 	MaxSubmissionPerMinute int `json:"max_submission_per_minute"`
+
+	// 判题配置
+	AverageJudgeTime int `json:"average_judge_time"` // 平均判题时间（秒）
+	ConcurrentJudges int `json:"concurrent_judges"`  // 并发判题服务器数量
 
 	// 文件上传
 	MaxFileSize      int64    `json:"max_file_size"`
@@ -147,4 +170,31 @@ type MonitorConf struct {
 	EnableTracing     bool   `json:"enable_tracing"`
 	TracingEndpoint   string `json:"tracing_endpoint"`
 	EnableHealthCheck bool   `json:"enable_health_check"`
+}
+
+// 判题服务配置
+type JudgeServiceConf struct {
+	Endpoint string `json:"endpoint"` // 判题服务地址
+	Timeout  int    `json:"timeout"`  // 超时时间(秒)
+}
+
+// Consul配置
+type ConsulConf struct {
+	Enabled         bool     `json:"enabled" yaml:"enabled"`           // 是否启用Consul
+	Address         string   `json:"address" yaml:"address"`           // Consul地址
+	ServiceName     string   `json:"service_name" yaml:"service_name"`      // 服务名称
+	ServiceID       string   `json:"service_id" yaml:"service_id"`        // 服务ID
+	HealthCheckURL  string   `json:"health_check_url" yaml:"health_check_url"`  // 健康检查URL
+	HealthInterval  string   `json:"health_interval" yaml:"health_interval"`   // 健康检查间隔
+	HealthTimeout   string   `json:"health_timeout" yaml:"health_timeout"`    // 健康检查超时
+	DeregisterAfter string   `json:"deregister_after" yaml:"deregister_after"`  // 失败后注销时间
+	Tags            []string `json:"tags" yaml:"tags"`             // 服务标签
+}
+
+// RPC配置
+type RPCConf struct {
+	Enabled        bool          `json:"enabled" yaml:"enabled"`         // 是否启用RPC
+	DefaultTimeout time.Duration `json:"default_timeout" yaml:"default_timeout"` // 默认超时时间
+	MaxRetries     int           `json:"max_retries" yaml:"max_retries"`     // 最大重试次数
+	RetryDelay     time.Duration `json:"retry_delay" yaml:"retry_delay"`     // 重试延迟
 }

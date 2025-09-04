@@ -1,0 +1,16 @@
+{
+  "submission_id": 1004,
+  "problem_id": 12,
+  "user_id": 5,
+  "language": "python",
+  "code": "n = int(input())\nnums = list(map(int, input().split()))\ntarget = int(input())\n\nnum_map = {}\nfor i, num in enumerate(nums):\n    complement = target - num\n    if complement in num_map:\n        print(num_map[complement], i)\n        break\n    num_map[num] = i"
+}
+
+
+
+
+
+
+
+
+

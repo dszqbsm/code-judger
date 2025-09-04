@@ -62,8 +62,9 @@ type JudgeResult struct {
 	SubmissionId int64            `json:"submission_id"`
 	Status       string           `json:"status"`
 	Score        int              `json:"score"`
-	TimeUsed     int              `json:"time_used"`   // 最大时间使用(毫秒)
-	MemoryUsed   int              `json:"memory_used"` // 最大内存使用(KB)
+	TimeUsed     int              `json:"time_used"`               // 最大时间使用(毫秒)
+	MemoryUsed   int              `json:"memory_used"`             // 最大内存使用(KB)
+	ErrorMessage string           `json:"error_message,omitempty"` // 错误信息
 	CompileInfo  CompileInfo      `json:"compile_info"`
 	TestCases    []TestCaseResult `json:"test_cases"`
 	JudgeInfo    JudgeInfo        `json:"judge_info"`
@@ -103,12 +104,17 @@ type GetJudgeStatusResp struct {
 }
 
 type JudgeStatus struct {
-	SubmissionId    int64  `json:"submission_id"`
-	Status          string `json:"status"`
-	Progress        int    `json:"progress"`          // 进度百分比
-	CurrentTestCase int    `json:"current_test_case"` // 当前测试用例编号
-	TotalTestCases  int    `json:"total_test_cases"`  // 总测试用例数
-	Message         string `json:"message"`
+	SubmissionId    int64   `json:"submission_id"`
+	Status          string  `json:"status"`
+	Progress        int     `json:"progress"`          // 进度百分比
+	CurrentTestCase int     `json:"current_test_case"` // 当前测试用例编号
+	TotalTestCases  int     `json:"total_test_cases"`  // 总测试用例数
+	Message         string  `json:"message"`
+	QueuePosition   *int    `json:"queue_position,omitempty"` // 队列位置（仅等待中时有效）
+	EstimatedTime   *int    `json:"estimated_time,omitempty"` // 预估等待时间（秒）
+	ErrorMessage    *string `json:"error_message,omitempty"`  // 错误信息
+	StartTime       *string `json:"start_time,omitempty"`     // 开始执行时间
+	EndTime         *string `json:"end_time,omitempty"`       // 结束时间
 }
 
 // ==================== 取消判题任务 ====================
@@ -125,6 +131,7 @@ type CancelJudgeData struct {
 	SubmissionId int64  `json:"submission_id"`
 	Status       string `json:"status"`
 	Message      string `json:"message"`
+	CancelledAt  string `json:"cancelled_at"` // 取消时间
 }
 
 // ==================== 重新判题 ====================
@@ -138,9 +145,13 @@ type RejudgeResp struct {
 }
 
 type RejudgeData struct {
-	SubmissionId int64  `json:"submission_id"`
-	Status       string `json:"status"`
-	Message      string `json:"message"`
+	SubmissionId  int64  `json:"submission_id"`
+	Status        string `json:"status"`
+	Message       string `json:"message"`
+	TaskId        string `json:"task_id"`        // 新任务ID
+	QueuePosition int    `json:"queue_position"` // 队列位置
+	EstimatedTime int    `json:"estimated_time"` // 预估等待时间（秒）
+	CreatedAt     string `json:"created_at"`     // 创建时间
 }
 
 // ==================== 判题节点状态 ====================

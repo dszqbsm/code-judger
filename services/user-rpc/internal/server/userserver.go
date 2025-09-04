@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 
-	"github.com/online-judge/code-judger/services/user-rpc/internal/logic"
-	"github.com/online-judge/code-judger/services/user-rpc/internal/svc"
-	"github.com/online-judge/code-judger/services/user-rpc/pb"
+	"github.com/dszqbsm/code-judger/services/user-rpc/internal/logic"
+	"github.com/dszqbsm/code-judger/services/user-rpc/internal/svc"
+	"github.com/dszqbsm/code-judger/services/user-rpc/pb"
 )
 
 type UserServer struct {

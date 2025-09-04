@@ -1,0 +1,16 @@
+{
+  "submission_id": 3001,
+  "problem_id": 12,
+  "user_id": 5,
+  "language": "java",
+  "code": "import java.io.*;\nimport java.util.*;\n\nclass Main {\n    public static void main(String[] args) throws Exception {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String[] input = br.readLine().split(\" \");\n        int a = Integer.parseInt(input[0]);\n        int b = Integer.parseInt(input[1]);\n        System.out.println(a + b);\n    }\n}"
+}
+
+
+
+
+
+
+
+
+

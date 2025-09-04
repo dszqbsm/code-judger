@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 实时推送测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        h1, h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        #messages {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f8f9fa;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        
+        .message {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        .message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .message.judge-result {
+            background-color: #e2e3e5;
+            color: #383d41;
+            border-left: 4px solid #007bff;
+        }
+        
+        .message.status-update {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .flex-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .flex-item {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket 实时推送测试</h1>
+    
+    <div class="container">
+        <h2>连接配置</h2>
+        <div class="input-group">
+            <label for="serverUrl">服务器地址:</label>
+            <input type="text" id="serverUrl" value="ws://localhost:8888/ws" placeholder="ws://localhost:8888/ws">
+        </div>
+        
+        <div class="input-group">
+            <label for="authToken">JWT Token:</label>
+            <input type="text" id="authToken" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        </div>
+        
+        <button id="connectBtn" onclick="connect()">连接 WebSocket</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled>断开连接</button>
+        <button onclick="clearMessages()">清空消息</button>
+        
+        <div id="connectionStatus" class="status disconnected">状态: 未连接</div>
+    </div>
+    
+    <div class="flex-container">
+        <div class="flex-item">
+            <div class="container">
+                <h2>模拟提交代码</h2>
+                <div class="input-group">
+                    <label for="problemId">题目ID:</label>
+                    <input type="number" id="problemId" value="1001">
+                </div>
+                
+                <div class="input-group">
+                    <label for="language">编程语言:</label>
+                    <select id="language">
+                        <option value="c">C</option>
+                        <option value="cpp">C++</option>
+                        <option value="java">Java</option>
+                        <option value="python">Python</option>
+                        <option value="go">Go</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="code">代码:</label>
+                    <textarea id="code" rows="8" placeholder="在这里输入你的代码...">#include <stdio.h>
+int main() {
+    int a, b;
+    scanf("%d %d", &a, &b);
+    printf("%d\n", a + b);
+    return 0;
+}</textarea>
+                </div>
+                
+                <button onclick="submitCode()">提交代码</button>
+            </div>
+            
+            <div class="container">
+                <h2>模拟判题结果推送</h2>
+                <div class="input-group">
+                    <label for="submissionId">提交ID:</label>
+                    <input type="number" id="submissionId" value="1">
+                </div>
+                
+                <div class="input-group">
+                    <label for="resultStatus">结果状态:</label>
+                    <select id="resultStatus">
+                        <option value="judging">判题中</option>
+                        <option value="accepted">通过</option>
+                        <option value="wrong_answer">答案错误</option>
+                        <option value="time_limit_exceeded">超时</option>
+                        <option value="memory_limit_exceeded">内存超限</option>
+                        <option value="runtime_error">运行错误</option>
+                        <option value="compile_error">编译错误</option>
+                    </select>
+                </div>
+                
+                <button onclick="simulateJudgeResult()">模拟判题结果</button>
+                <button onclick="simulateStatusUpdate()">模拟状态更新</button>
+            </div>
+        </div>
+        
+        <div class="flex-item">
+            <div class="container">
+                <h2>实时消息</h2>
+                <div id="messages"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        function addMessage(message, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            messageDiv.textContent = `[${timestamp}] ${message}`;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateConnectionStatus(status, className) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.textContent = `状态: ${status}`;
+            statusDiv.className = `status ${className}`;
+        }
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const authToken = document.getElementById('authToken').value;
+            
+            if (!authToken) {
+                addMessage('请先输入JWT Token', 'error');
+                return;
+            }
+            
+            updateConnectionStatus('连接中...', 'connecting');
+            addMessage('正在连接到 ' + serverUrl, 'info');
+            
+            // 在WebSocket URL中包含JWT token
+            const wsUrl = `${serverUrl}?token=${encodeURIComponent(authToken)}`;
+            
+            try {
+                websocket = new WebSocket(wsUrl);
+                
+                websocket.onopen = function(event) {
+                    updateConnectionStatus('已连接', 'connected');
+                    addMessage('WebSocket 连接成功', 'success');
+                    reconnectAttempts = 0;
+                    
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                };
+                
+                websocket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleMessage(data);
+                    } catch (e) {
+                        addMessage('收到无效消息: ' + event.data, 'error');
+                    }
+                };
+                
+                websocket.onclose = function(event) {
+                    updateConnectionStatus('连接关闭', 'disconnected');
+                    addMessage(`WebSocket 连接关闭 (code: ${event.code}, reason: ${event.reason})`, 'error');
+                    
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    
+                    // 自动重连
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        addMessage(`准备第 ${reconnectAttempts} 次重连...`, 'info');
+                        setTimeout(connect, 3000);
+                    }
+                };
+                
+                websocket.onerror = function(error) {
+                    addMessage('WebSocket 错误: ' + error, 'error');
+                };
+                
+            } catch (error) {
+                addMessage('连接失败: ' + error.message, 'error');
+                updateConnectionStatus('连接失败', 'disconnected');
+            }
+        }
+
+        function disconnect() {
+            if (websocket) {
+                reconnectAttempts = maxReconnectAttempts; // 阻止自动重连
+                websocket.close();
+                websocket = null;
+            }
+        }
+
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'welcome':
+                    addMessage('服务器欢迎消息: ' + data.data, 'success');
+                    break;
+                    
+                case 'judge_result':
+                    addMessage(`判题结果 - 提交ID: ${data.submission_id}, 状态: ${data.data.status}`, 'judge-result');
+                    if (data.data.result) {
+                        addMessage(`  分数: ${data.data.result.score}, 用时: ${data.data.result.time_used}ms, 内存: ${data.data.result.memory_used}KB`, 'judge-result');
+                    }
+                    break;
+                    
+                case 'status_update':
+                    addMessage(`状态更新 - 提交ID: ${data.submission_id}, 状态: ${data.data.status}, 进度: ${data.data.progress}%`, 'status-update');
+                    break;
+                    
+                default:
+                    addMessage('收到消息: ' + JSON.stringify(data, null, 2), 'info');
+            }
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        function submitCode() {
+            const problemId = document.getElementById('problemId').value;
+            const language = document.getElementById('language').value;
+            const code = document.getElementById('code').value;
+            const authToken = document.getElementById('authToken').value;
+            
+            if (!authToken) {
+                addMessage('请先输入JWT Token', 'error');
+                return;
+            }
+            
+            const submitData = {
+                problem_id: parseInt(problemId),
+                language: language,
+                code: code
+            };
+            
+            addMessage('提交代码: ' + JSON.stringify(submitData), 'info');
+            
+            // 发送HTTP请求到提交接口
+            fetch('http://localhost:8888/api/v1/submissions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + authToken
+                },
+                body: JSON.stringify(submitData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage('提交响应: ' + JSON.stringify(data, null, 2), 'success');
+                if (data.data && data.data.submission_id) {
+                    document.getElementById('submissionId').value = data.data.submission_id;
+                }
+            })
+            .catch(error => {
+                addMessage('提交失败: ' + error.message, 'error');
+            });
+        }
+
+        function simulateJudgeResult() {
+            const submissionId = parseInt(document.getElementById('submissionId').value);
+            const status = document.getElementById('resultStatus').value;
+            
+            // 模拟判题结果消息
+            const resultMessage = {
+                type: 'judge_result',
+                submission_id: submissionId,
+                user_id: 1,
+                data: {
+                    submission_id: submissionId,
+                    status: status,
+                    result: status === 'accepted' ? {
+                        verdict: 'Accepted',
+                        score: 100,
+                        time_used: 120,
+                        memory_used: 1024,
+                        test_cases: [
+                            { case_id: 1, status: 'accepted', time_used: 50, memory_used: 512 },
+                            { case_id: 2, status: 'accepted', time_used: 70, memory_used: 1024 }
+                        ]
+                    } : null,
+                    timestamp: Date.now()
+                },
+                timestamp: new Date().toISOString()
+            };
+            
+            handleMessage(resultMessage);
+        }
+
+        function simulateStatusUpdate() {
+            const submissionId = parseInt(document.getElementById('submissionId').value);
+            
+            // 模拟状态更新序列
+            const updates = [
+                { status: 'queued', progress: 0, message: '等待判题' },
+                { status: 'compiling', progress: 20, message: '编译中' },
+                { status: 'running', progress: 50, message: '运行测试用例' },
+                { status: 'judging', progress: 80, message: '判题中' },
+                { status: 'completed', progress: 100, message: '判题完成' }
+            ];
+            
+            updates.forEach((update, index) => {
+                setTimeout(() => {
+                    const statusMessage = {
+                        type: 'status_update',
+                        submission_id: submissionId,
+                        user_id: 1,
+                        data: {
+                            submission_id: submissionId,
+                            status: update.status,
+                            progress: update.progress,
+                            message: update.message,
+                            timestamp: Date.now()
+                        },
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    handleMessage(statusMessage);
+                }, index * 1000);
+            });
+        }
+
+        // 页面加载时的初始化
+        window.onload = function() {
+            addMessage('WebSocket 测试页面已加载', 'info');
+            addMessage('请配置服务器地址和JWT Token，然后点击连接', 'info');
+        };
+
+        // 页面关闭时断开连接
+        window.onbeforeunload = function() {
+            if (websocket) {
+                websocket.close();
+            }
+        };
+    </script>
+</body>
+</html>
+
+

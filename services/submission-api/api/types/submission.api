@@ -431,3 +431,118 @@ type SimilarityResult {
     Confidence      float64  `json:"confidence"`
 }
 
+// ===========================================
+// 判题相关代理接口类型定义
+// ===========================================
+
+// 获取提交判题结果请求
+type GetSubmissionJudgeResultReq {
+    SubmissionID int64 `path:"submission_id" validate:"required"`
+}
+
+// 获取提交判题结果响应
+type GetSubmissionJudgeResultResp {
+    Code    int         `json:"code"`
+    Message string      `json:"message"`
+    Data    JudgeResult `json:"data"`
+}
+
+type JudgeResult {
+    SubmissionId int64              `json:"submission_id"`
+    Status       string             `json:"status"`
+    Score        int                `json:"score"`
+    TimeUsed     int                `json:"time_used"`
+    MemoryUsed   int                `json:"memory_used"`
+    CompileInfo  CompileInfo        `json:"compile_info"`
+    TestCases    []TestCaseResult   `json:"test_cases"`
+    JudgeInfo    JudgeInfo          `json:"judge_info"`
+}
+
+type CompileInfo {
+    Success bool   `json:"success"`
+    Message string `json:"message"`
+    Time    int    `json:"time"`
+}
+
+type TestCaseResult {
+    CaseId      int    `json:"case_id"`
+    Status      string `json:"status"`
+    TimeUsed    int    `json:"time_used"`
+    MemoryUsed  int    `json:"memory_used"`
+    Input       string `json:"input"`
+    Output      string `json:"output"`
+    Expected    string `json:"expected"`
+    ErrorOutput string `json:"error_output,omitempty"`
+}
+
+type JudgeInfo {
+    JudgeServer     string `json:"judge_server"`
+    JudgeTime       string `json:"judge_time"`
+    LanguageVersion string `json:"language_version"`
+}
+
+// 获取提交判题状态请求
+type GetSubmissionJudgeStatusReq {
+    SubmissionID int64 `path:"submission_id" validate:"required"`
+}
+
+// 获取提交判题状态响应
+type GetSubmissionJudgeStatusResp {
+    Code    int         `json:"code"`
+    Message string      `json:"message"`
+    Data    JudgeStatus `json:"data"`
+}
+
+type JudgeStatus {
+    SubmissionId    int64  `json:"submission_id"`
+    Status          string `json:"status"`
+    Progress        int    `json:"progress"`
+    CurrentTestCase int    `json:"current_test_case"`
+    TotalTestCases  int    `json:"total_test_cases"`
+    Message         string `json:"message"`
+}
+
+// 重新判题请求
+type RejudgeSubmissionReq {
+    SubmissionID int64 `path:"submission_id" validate:"required"`
+}
+
+// 重新判题响应
+type RejudgeSubmissionResp {
+    Code    int         `json:"code"`
+    Message string      `json:"message"`
+    Data    RejudgeData `json:"data"`
+}
+
+type RejudgeData {
+    SubmissionId int64  `json:"submission_id"`
+    Status       string `json:"status"`
+    Message      string `json:"message"`
+}
+
+// 获取判题队列状态响应
+type GetJudgeQueueStatusResp {
+    Code    int             `json:"code"`
+    Message string          `json:"message"`
+    Data    JudgeQueueData  `json:"data"`
+}
+
+type JudgeQueueData {
+    QueueLength    int         `json:"queue_length"`
+    PendingTasks   int         `json:"pending_tasks"`
+    RunningTasks   int         `json:"running_tasks"`
+    CompletedTasks int         `json:"completed_tasks"`
+    FailedTasks    int         `json:"failed_tasks"`
+    QueueItems     []QueueItem `json:"queue_items"`
+}
+
+type QueueItem {
+    SubmissionId  int64  `json:"submission_id"`
+    UserId        int64  `json:"user_id"`
+    ProblemId     int64  `json:"problem_id"`
+    Language      string `json:"language"`
+    Priority      int    `json:"priority"`
+    QueueTime     string `json:"queue_time"`
+    EstimatedTime int    `json:"estimated_time"`
+}
+

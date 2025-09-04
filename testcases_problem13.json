@@ -1,0 +1,50 @@
+{
+  "problem_id": 13,
+  "replace_all": true,
+  "test_cases": [
+    {
+      "input_data": "10",
+      "expected_output": "55",
+      "is_sample": true,
+      "score": 20,
+      "sort_order": 1
+    },
+    {
+      "input_data": "0",
+      "expected_output": "0",
+      "is_sample": false,
+      "score": 15,
+      "sort_order": 2
+    },
+    {
+      "input_data": "1",
+      "expected_output": "1",
+      "is_sample": false,
+      "score": 15,
+      "sort_order": 3
+    },
+    {
+      "input_data": "5",
+      "expected_output": "5",
+      "is_sample": false,
+      "score": 20,
+      "sort_order": 4
+    },
+    {
+      "input_data": "15",
+      "expected_output": "610",
+      "is_sample": false,
+      "score": 30,
+      "sort_order": 5
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+

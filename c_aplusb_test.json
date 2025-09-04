@@ -1,0 +1,16 @@
+{
+  "submission_id": 2001,
+  "problem_id": 12,
+  "user_id": 5,
+  "language": "c",
+  "code": "#include <stdio.h>\n\nint main() {\n    int a, b;\n    scanf(\"%d %d\", &a, &b);\n    printf(\"%d\\n\", a + b);\n    return 0;\n}"
+}
+
+
+
+
+
+
+
+
+

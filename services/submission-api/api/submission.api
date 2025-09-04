@@ -75,6 +75,27 @@ service submission-api {
     )
     @handler compareSubmissions
     post /compare (CompareSubmissionsReq) returns (CompareSubmissionsResp)
+    
+    @doc(
+        summary: "获取提交判题结果"
+        description: "获取提交的详细判题结果"
+    )
+    @handler getSubmissionJudgeResult
+    get /:submission_id/result (GetSubmissionJudgeResultReq) returns (GetSubmissionJudgeResultResp)
+    
+    @doc(
+        summary: "获取提交判题状态"
+        description: "获取提交的实时判题状态"
+    )
+    @handler getSubmissionJudgeStatus
+    get /:submission_id/status (GetSubmissionJudgeStatusReq) returns (GetSubmissionJudgeStatusResp)
+    
+    @doc(
+        summary: "重新判题"
+        description: "重新判题指定提交"
+    )
+    @handler rejudgeSubmission
+    post /:submission_id/rejudge (RejudgeSubmissionReq) returns (RejudgeSubmissionResp)
 }
 
 @server(
@@ -137,6 +158,13 @@ service submission-api {
     )
     @handler detectPlagiarism
     post /plagiarism/detect (DetectPlagiarismReq) returns (DetectPlagiarismResp)
+    
+    @doc(
+        summary: "获取判题队列状态"
+        description: "获取当前判题队列的状态信息"
+    )
+    @handler getJudgeQueueStatus
+    get /judge/queue returns (GetJudgeQueueStatusResp)
 }
 
 @server(

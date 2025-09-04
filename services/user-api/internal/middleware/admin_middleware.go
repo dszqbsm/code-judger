@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/online-judge/code-judger/common/types"
-	"github.com/online-judge/code-judger/common/utils"
+	"github.com/dszqbsm/code-judger/common/types"
+	"github.com/dszqbsm/code-judger/common/utils"
 )
 
 type AdminOnlyMiddleware struct{}

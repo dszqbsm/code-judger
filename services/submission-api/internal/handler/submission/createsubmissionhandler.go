@@ -3,9 +3,9 @@ package submission
 import (
 	"net/http"
 
-	"github.com/online-judge/code-judger/services/submission-api/internal/logic/submission"
-	"github.com/online-judge/code-judger/services/submission-api/internal/svc"
-	"github.com/online-judge/code-judger/services/submission-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/logic/submission"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/types"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -18,7 +18,7 @@ func CreateSubmissionHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := submission.NewCreateSubmissionLogic(r.Context(), svcCtx)
+		l := submission.NewCreateSubmissionLogic(r.Context(), svcCtx, r)
 		resp, err := l.CreateSubmission(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

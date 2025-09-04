@@ -1,10 +1,13 @@
 package svc
 
 import (
-	"github.com/online-judge/code-judger/services/judge-api/internal/client"
-	"github.com/online-judge/code-judger/services/judge-api/internal/config"
-	"github.com/online-judge/code-judger/services/judge-api/internal/judge"
-	"github.com/online-judge/code-judger/services/judge-api/internal/scheduler"
+	"context"
+
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/client"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/judge"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/messagequeue"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/scheduler"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
@@ -28,6 +31,10 @@ type ServiceContext struct {
 
 	// 题目服务客户端
 	ProblemClient client.ProblemServiceClient
+
+	// 消息队列
+	KafkaConsumer messagequeue.Consumer
+	KafkaProducer messagequeue.Producer
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -67,11 +74,23 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		logx.Infof("RPC client not implemented yet, using mock client for problem service")
 	} else {
 		// 兼容HTTP调用（向后兼容）
-		baseClient := client.NewHttpProblemClient(c.ProblemService.HTTP.Endpoint)
+		baseClient := client.NewHttpProblemClientWithAuth(c.ProblemService.HTTP.Endpoint, c.ProblemService.HTTP.ApiKey)
 
 		// 暂时不使用重试机制，直接使用基础客户端
 		problemClient = baseClient
 		logx.Infof("Using HTTP problem service client: %s", c.ProblemService.HTTP.Endpoint)
+	}
+
+	// 初始化Kafka生产者
+	kafkaProducer := messagequeue.NewKafkaProducer(c.KafkaConf)
+
+	// 初始化Kafka消费者（传入题目服务客户端）
+	kafkaConsumer := messagequeue.NewKafkaConsumer(c.KafkaConf, taskScheduler, kafkaProducer, problemClient)
+
+	// 启动Kafka消费者
+	if err := kafkaConsumer.Start(context.Background()); err != nil {
+		logx.Errorf("Failed to start Kafka consumer: %v", err)
+		panic(err)
 	}
 
 	return &ServiceContext{
@@ -81,5 +100,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		JudgeEngine:   judgeEngine,
 		TaskScheduler: taskScheduler,
 		ProblemClient: problemClient,
+		KafkaConsumer: kafkaConsumer,
+		KafkaProducer: kafkaProducer,
 	}
 }

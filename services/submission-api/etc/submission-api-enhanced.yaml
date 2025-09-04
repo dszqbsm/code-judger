@@ -1,0 +1,151 @@
+Name: submission-api
+Host: 0.0.0.0
+Port: 8888
+
+# 数据库配置
+DataSource: root:123456@tcp(localhost:3306)/code_judger?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
+
+# Redis配置
+RedisConf:
+  Host: localhost:6379
+  Type: node
+
+# 缓存配置
+CacheConf:
+  - Host: localhost:6379
+    Type: node
+
+# JWT配置
+Auth:
+  AccessSecret: "your-jwt-secret-key-here"
+  AccessExpire: 7200
+
+# Kafka配置
+KafkaConf:
+  Brokers:
+    - localhost:9094
+  Topics:
+    JudgeTask: "judge_tasks"
+    JudgeResult: "judge_results"
+    StatusUpdate: "status_updates"
+    Notification: "notifications"
+    DeadLetter: "dead_letters"
+  Groups:
+    SubmissionResult: "submission_result_group"
+    StatusUpdate: "status_update_group"
+
+# 业务配置
+Business:
+  DefaultPageSize: 20
+  MaxPageSize: 100
+  MaxCodeLength: 65536
+  MaxSubmissionPerMinute: 5
+  AverageJudgeTime: 6
+  ConcurrentJudges: 3
+  MaxFileSize: 10485760
+  AllowedFileTypes:
+    - "text/plain"
+    - "application/json"
+
+# WebSocket配置
+WebSocket:
+  ReadTimeout: 60
+  WriteTimeout: 10
+  HeartbeatInterval: 30
+  MaxConnections: 1000
+  BufferSize: 1024
+
+# 提交配置
+Submission:
+  SupportedLanguages:
+    - Name: "c"
+      DisplayName: "C"
+      FileExtension: ".c"
+      TimeMultiplier: 1.0
+      MemoryMultiplier: 1.0
+      Enabled: true
+    - Name: "cpp"
+      DisplayName: "C++"
+      FileExtension: ".cpp"
+      TimeMultiplier: 1.0
+      MemoryMultiplier: 1.0
+      Enabled: true
+    - Name: "java"
+      DisplayName: "Java"
+      FileExtension: ".java"
+      TimeMultiplier: 2.0
+      MemoryMultiplier: 2.0
+      Enabled: true
+    - Name: "python"
+      DisplayName: "Python"
+      FileExtension: ".py"
+      TimeMultiplier: 3.0
+      MemoryMultiplier: 2.0
+      Enabled: true
+    - Name: "go"
+      DisplayName: "Go"
+      FileExtension: ".go"
+      TimeMultiplier: 1.5
+      MemoryMultiplier: 1.5
+      Enabled: true
+  QueueSize: 1000
+  MaxRetries: 3
+  RetryInterval: 5
+  StatsRetentionDays: 30
+  ExportMaxRows: 10000
+  ExportExpireHours: 24
+
+# 查重配置
+AntiCheat:
+  Enabled: false
+  SimilarityThreshold: 0.8
+  BatchSize: 100
+  CheckInterval: 60
+  Algorithms:
+    EnableStringMatch: true
+    EnableASTMatch: true
+    EnableFeatureMatch: true
+    StringWeight: 0.3
+    ASTWeight: 0.4
+    FeatureWeight: 0.3
+  MLModel:
+    Enabled: false
+    ModelPath: ""
+    Threshold: 0.8
+
+# 监控配置
+Monitor:
+  EnableMetrics: true
+  MetricsInterval: 60
+  EnableTracing: false
+  TracingEndpoint: ""
+  EnableHealthCheck: true
+
+# 判题服务配置（HTTP回退）
+JudgeService:
+  Endpoint: "http://localhost:8890"
+  Timeout: 30
+
+# Consul配置
+Consul:
+  Enabled: true
+  Address: "localhost:8500"
+  ServiceName: "submission-api"
+  ServiceID: "submission-api-1"
+  HealthCheckURL: "http://localhost:8888/health"
+  HealthInterval: "10s"
+  HealthTimeout: "3s"
+  DeregisterAfter: "30s"
+  Tags:
+    - "submission"
+    - "api"
+    - "v1"
+
+# RPC配置
+RPC:
+  Enabled: true
+  DefaultTimeout: 10s
+  MaxRetries: 2
+  RetryDelay: 500ms
+
+

@@ -3,9 +3,9 @@ package problem
 import (
 	"net/http"
 
-	"github.com/online-judge/code-judger/services/problem-api/internal/logic/problem"
-	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
-	"github.com/online-judge/code-judger/services/problem-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/logic/problem"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/types"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -18,7 +18,7 @@ func CreateProblemHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := problem.NewCreateProblemLogic(r.Context(), svcCtx)
+		l := problem.NewCreateProblemLogic(r.Context(), svcCtx, r)
 		resp, err := l.CreateProblem(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

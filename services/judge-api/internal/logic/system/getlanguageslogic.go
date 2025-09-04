@@ -3,9 +3,9 @@ package system
 import (
 	"context"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/languages"
-	"github.com/online-judge/code-judger/services/judge-api/internal/svc"
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/languages"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

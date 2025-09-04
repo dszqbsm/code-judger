@@ -1,0 +1,18 @@
+{
+  "submission_id": 8002,
+  "problem_id": 1,
+  "user_id": 5,
+  "language": "python",
+  "code": "a, b = map(int, input().split())\nprint(a + b)",
+  "time_limit": 1000,
+  "memory_limit": 128
+}
+
+
+
+
+
+
+
+
+

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/online-judge/code-judger/services/problem-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/types"
 
 	"github.com/stretchr/testify/assert"
 )

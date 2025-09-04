@@ -3,9 +3,9 @@ package admin
 import (
 	"net/http"
 
-	"github.com/online-judge/code-judger/common/utils"
-	"github.com/online-judge/code-judger/services/user-api/internal/svc"
-	"github.com/online-judge/code-judger/services/user-api/internal/types"
+	"github.com/dszqbsm/code-judger/common/utils"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 

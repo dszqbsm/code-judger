@@ -1,8 +1,11 @@
-module github.com/online-judge/code-judger/services/user-api
+module github.com/dszqbsm/code-judger/services/user-api
 
 go 1.21
 
-require github.com/zeromicro/go-zero v1.9.0
+require (
+	github.com/dszqbsm/code-judger v0.0.0
+	github.com/zeromicro/go-zero v1.9.0
+)
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -43,6 +46,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
@@ -52,3 +56,6 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+// 使用本地common模块
+replace github.com/dszqbsm/code-judger => ../../

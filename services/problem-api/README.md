@@ -104,6 +104,13 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8889/api/v1/prob
 | 题目详情 | GET | `/api/v1/problems/{id}` | 登录用户 | 获取题目详细信息 |
 | 更新题目 | PUT | `/api/v1/problems/{id}` | 创建者/管理员 | 更新题目信息 |
 | 删除题目 | DELETE | `/api/v1/problems/{id}` | 创建者/管理员 | 软删除题目 |
+| **上传测试用例** | **POST** | **`/api/v1/problems/{id}/test-cases`** | **教师/管理员** | **批量上传测试用例** |
+| **获取测试用例** | **GET** | **`/api/v1/problems/{id}/test-cases`** | **登录用户** | **获取题目测试用例列表** |
+| **测试用例详情** | **GET** | **`/api/v1/test-cases/{id}`** | **登录用户** | **获取单个测试用例详情** |
+| **更新测试用例** | **PUT** | **`/api/v1/test-cases/{id}`** | **创建者/管理员** | **更新测试用例** |
+| **删除测试用例** | **DELETE** | **`/api/v1/test-cases/{id}`** | **创建者/管理员** | **删除测试用例** |
+| **判题服务专用-题目** | **GET** | **`/internal/v1/problems/{id}`** | **内部服务** | **供判题服务获取题目信息** |
+| **判题服务专用-用例** | **GET** | **`/internal/v1/problems/{id}/test-cases`** | **内部服务** | **供判题服务获取测试用例** |
 | 健康检查 | GET | `/api/v1/health` | 无需认证 | 服务健康状态 |
 | 服务指标 | GET | `/api/v1/metrics` | 无需认证 | 服务性能指标 |
 
@@ -136,6 +143,70 @@ curl -X POST http://localhost:8889/api/v1/problems \
 ```bash
 curl "http://localhost:8889/api/v1/problems?page=1&limit=10&difficulty=easy&tags=数组,哈希表" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### 上传测试用例
+
+```bash
+curl -X POST http://localhost:8889/api/v1/problems/1/test-cases \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "problem_id": 1,
+    "replace_all": true,
+    "test_cases": [
+      {
+        "input_data": "4\n2 7 11 15\n9",
+        "expected_output": "0 1",
+        "is_sample": true,
+        "score": 20,
+        "sort_order": 1
+      },
+      {
+        "input_data": "3\n3 2 4\n6",
+        "expected_output": "1 2",
+        "is_sample": false,
+        "score": 40,
+        "sort_order": 2
+      }
+    ]
+  }'
+```
+
+#### 获取测试用例列表
+
+```bash
+# 获取测试用例列表（不包含具体数据）
+curl "http://localhost:8889/api/v1/problems/1/test-cases" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 获取测试用例列表（包含具体数据）
+curl "http://localhost:8889/api/v1/problems/1/test-cases?include_data=true" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 只获取示例测试用例
+curl "http://localhost:8889/api/v1/problems/1/test-cases?only_samples=true&include_data=true" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### 判题服务获取题目信息
+
+```bash
+# 获取题目详细信息（供判题服务使用）
+curl "http://localhost:8891/internal/v1/problems/11" \
+  -H "User-Agent: judge-api/1.0.0"
+```
+
+#### 判题服务获取测试用例
+
+```bash
+# 获取所有测试用例（供判题服务使用）
+curl "http://localhost:8891/internal/v1/problems/11/test-cases?include_hidden=true" \
+  -H "User-Agent: judge-service/1.0"
+
+# 只获取示例测试用例
+curl "http://localhost:8891/internal/v1/problems/11/test-cases" \
+  -H "User-Agent: judge-service/1.0"
 ```
 
 详细的API文档请参考：[API接口文档](../../docs/API接口文档.md#8-题目管理接口)

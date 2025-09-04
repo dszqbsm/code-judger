@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
-	"github.com/online-judge/code-judger/services/problem-api/internal/types"
-	"github.com/online-judge/code-judger/services/problem-api/models"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/middleware"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/problem-api/models"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -18,21 +20,60 @@ type CreateProblemLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	r      *http.Request
 }
 
-func NewCreateProblemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CreateProblemLogic {
+func NewCreateProblemLogic(ctx context.Context, svcCtx *svc.ServiceContext, r *http.Request) *CreateProblemLogic {
 	return &CreateProblemLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
+		r:      r,
 	}
 }
 
 func (l *CreateProblemLogic) CreateProblem(req *types.CreateProblemReq) (resp *types.CreateProblemResp, err error) {
-	// 验证用户权限 - 这里先模拟，实际应该从JWT中获取用户信息
-	createdBy := int64(1) // 临时硬编码，实际应该从上下文获取
+	// 1. 获取用户信息
+	var user *middleware.UserInfo
+	
+	// 首先尝试从go-zero的JWT上下文获取用户信息
+	user, err = middleware.GetUserFromContext(l.ctx)
+	if err != nil {
+		// 如果上下文中没有，尝试从HTTP请求头获取
+		if l.r != nil {
+			user, err = middleware.GetUserFromJWT(l.r, l.svcCtx.JWTManager)
+			if err != nil {
+				logx.Errorf("获取用户信息失败: %v", err)
+				return &types.CreateProblemResp{
+					BaseResp: types.BaseResp{
+						Code:    401,
+						Message: "认证失败：" + err.Error(),
+					},
+				}, nil
+			}
+		} else {
+			logx.Errorf("无法获取用户信息: 上下文和请求头都为空")
+			return &types.CreateProblemResp{
+				BaseResp: types.BaseResp{
+					Code:    401,
+					Message: "认证失败：缺少用户信息",
+				},
+			}, nil
+		}
+	}
 
-	// 验证请求参数
+	// 2. 验证用户权限
+	if err = middleware.ValidateCreateProblemPermission(user.Role); err != nil {
+		logx.Errorf("用户 %s (ID: %d) 权限验证失败: %v", user.Username, user.UserID, err)
+		return &types.CreateProblemResp{
+			BaseResp: types.BaseResp{
+				Code:    403,
+				Message: err.Error(),
+			},
+		}, nil
+	}
+
+	// 3. 验证请求参数
 	if err = l.validateRequest(req); err != nil {
 		return &types.CreateProblemResp{
 			BaseResp: types.BaseResp{
@@ -42,7 +83,11 @@ func (l *CreateProblemLogic) CreateProblem(req *types.CreateProblemReq) (resp *t
 		}, nil
 	}
 
-	// 创建题目对象
+	// 4. 记录操作日志
+	logx.Infof("用户 %s (ID: %d, Role: %s) 开始创建题目: %s", 
+		user.Username, user.UserID, user.Role, req.Title)
+
+	// 5. 创建题目对象
 	problem := &models.Problem{
 		Title:        req.Title,
 		Description:  req.Description,
@@ -53,41 +98,59 @@ func (l *CreateProblemLogic) CreateProblem(req *types.CreateProblemReq) (resp *t
 		Difficulty:   req.Difficulty,
 		TimeLimit:    req.TimeLimit,
 		MemoryLimit:  req.MemoryLimit,
-		CreatedBy:    createdBy,
+		CreatedBy:    user.UserID, // 使用实际的用户ID
 		IsPublic:     req.IsPublic,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
 
-	// 处理Languages和Tags JSON格式
+	// 6. 处理Languages和Tags JSON格式
 	if len(req.Languages) > 0 {
-		languagesJson, _ := json.Marshal(req.Languages)
+		languagesJson, err := json.Marshal(req.Languages)
+		if err != nil {
+			logx.Errorf("序列化编程语言列表失败: %v", err)
+			return &types.CreateProblemResp{
+				BaseResp: types.BaseResp{
+					Code:    400,
+					Message: "编程语言格式错误",
+				},
+			}, nil
+		}
 		problem.Languages.String = string(languagesJson)
 		problem.Languages.Valid = true
 	}
 
 	if len(req.Tags) > 0 {
-		tagsJson, _ := json.Marshal(req.Tags)
+		tagsJson, err := json.Marshal(req.Tags)
+		if err != nil {
+			logx.Errorf("序列化标签列表失败: %v", err)
+			return &types.CreateProblemResp{
+				BaseResp: types.BaseResp{
+					Code:    400,
+					Message: "标签格式错误",
+				},
+			}, nil
+		}
 		problem.Tags.String = string(tagsJson)
 		problem.Tags.Valid = true
 	}
 
-	// 插入数据库
+	// 7. 插入数据库
 	result, err := l.svcCtx.ProblemModel.Insert(l.ctx, problem)
 	if err != nil {
-		logx.Errorf("Failed to create problem: %v", err)
+		logx.Errorf("用户 %s (ID: %d) 创建题目失败: %v", user.Username, user.UserID, err)
 		return &types.CreateProblemResp{
 			BaseResp: types.BaseResp{
 				Code:    500,
-				Message: "创建题目失败",
+				Message: "创建题目失败，请稍后重试",
 			},
 		}, nil
 	}
 
-	// 获取创建的题目ID
+	// 8. 获取创建的题目ID
 	problemId, err := result.LastInsertId()
 	if err != nil {
-		logx.Errorf("Failed to get last insert id: %v", err)
+		logx.Errorf("获取题目ID失败: %v", err)
 		return &types.CreateProblemResp{
 			BaseResp: types.BaseResp{
 				Code:    500,
@@ -96,9 +159,9 @@ func (l *CreateProblemLogic) CreateProblem(req *types.CreateProblemReq) (resp *t
 		}, nil
 	}
 
-	// 记录操作日志
-	logx.Infof("Problem created successfully: id=%d, title=%s, created_by=%d", 
-		problemId, req.Title, createdBy)
+	// 9. 记录成功操作日志
+	logx.Infof("题目创建成功: ID=%d, 标题=%s, 创建者=%s (ID: %d), 难度=%s, 公开=%t", 
+		problemId, req.Title, user.Username, user.UserID, req.Difficulty, req.IsPublic)
 
 	return &types.CreateProblemResp{
 		BaseResp: types.BaseResp{

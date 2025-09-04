@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/online-judge/code-judger/services/submission-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/config"
 
 	"github.com/gorilla/websocket"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -342,4 +342,21 @@ func (m *Manager) GetConnectionCount() int {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	return len(m.connections)
+}
+
+// BroadcastToUser 向特定用户广播消息
+func (m *Manager) BroadcastToUser(userID int64, message *Message) {
+	message.UserID = &userID
+	m.broadcast <- message
+}
+
+// BroadcastToSubmission 向提交对应的用户广播消息  
+func (m *Manager) BroadcastToSubmission(submissionID int64, message *Message) {
+	message.SubmissionID = &submissionID
+	m.broadcast <- message
+}
+
+// BroadcastGlobal 全局广播消息
+func (m *Manager) BroadcastGlobal(message *Message) {
+	m.broadcast <- message
 }

@@ -1,0 +1,18 @@
+{
+  "submission_id": 5002,
+  "problem_id": 1,
+  "user_id": 5,
+  "language": "java",
+  "code": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello World\");\n        throw new RuntimeException(\"This is a test error\");\n    }\n}",
+  "time_limit": 1000,
+  "memory_limit": 128
+}
+
+
+
+
+
+
+
+
+

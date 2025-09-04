@@ -1,7 +1,7 @@
 package svc
 
 import (
-	"github.com/online-judge/code-judger/services/user-rpc/internal/config"
+	"github.com/dszqbsm/code-judger/services/user-rpc/internal/config"
 )
 
 type ServiceContext struct {

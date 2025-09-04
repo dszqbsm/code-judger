@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net/http"
@@ -8,9 +9,10 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
 
-	"github.com/online-judge/code-judger/services/submission-api/internal/config"
-	"github.com/online-judge/code-judger/services/submission-api/internal/handler/submission"
-	"github.com/online-judge/code-judger/services/submission-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/handler/health"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/handler/submission"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/svc"
 )
 
 var configFile = flag.String("f", "etc/submission-api.yaml", "the config file")
@@ -29,8 +31,16 @@ func main() {
 	}, "*"))
 	defer server.Stop()
 
-	ctx := svc.NewServiceContext(c)
-	registerHandlers(server, ctx)
+	svcCtx := svc.NewServiceContext(c)
+	
+	// 启动后台服务（Consul注册、Kafka消费者等）
+	bgCtx := context.Background()
+	if err := svcCtx.StartBackgroundServices(bgCtx); err != nil {
+		panic(fmt.Sprintf("Failed to start background services: %v", err))
+	}
+	defer svcCtx.StopBackgroundServices()
+	
+	registerHandlers(server, svcCtx)
 
 	// 设置响应格式为JSON
 	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
@@ -79,11 +89,8 @@ func registerHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	// 健康检查
 	server.AddRoute(rest.Route{
-		Method: http.MethodGet,
-		Path:   "/health",
-		Handler: func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
-		},
+		Method:  http.MethodGet,
+		Path:    "/health",
+		Handler: health.HealthHandler(serverCtx),
 	})
 }

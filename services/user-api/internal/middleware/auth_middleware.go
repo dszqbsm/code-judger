@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/online-judge/code-judger/common/types"
-	"github.com/online-judge/code-judger/common/utils"
-	"github.com/online-judge/code-judger/services/user-api/models"
+	"github.com/dszqbsm/code-judger/common/types"
+	"github.com/dszqbsm/code-judger/common/utils"
+	"github.com/dszqbsm/code-judger/services/user-api/models"
 )
 
 type AuthMiddleware struct {

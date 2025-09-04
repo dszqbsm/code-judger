@@ -1,0 +1,16 @@
+{
+  "submission_id": 1002,
+  "problem_id": 12,
+  "user_id": 5,
+  "language": "c",
+  "code": "#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n    int n;\n    scanf(\"%d\", &n);\n    \n    int *nums = (int*)malloc(n * sizeof(int));\n    for (int i = 0; i < n; i++) {\n        scanf(\"%d\", &nums[i]);\n    }\n    \n    int target;\n    scanf(\"%d\", &target);\n    \n    for (int i = 0; i < n - 1; i++) {\n        for (int j = i + 1; j < n; j++) {\n            if (nums[i] + nums[j] == target) {\n                printf(\"%d %d\\n\", i, j);\n                free(nums);\n                return 0;\n            }\n        }\n    }\n    \n    free(nums);\n    return 0;\n}"
+}
+
+
+
+
+
+
+
+
+

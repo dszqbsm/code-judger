@@ -1,0 +1,16 @@
+{
+  "submission_id": 3003,
+  "problem_id": 12,
+  "user_id": 5,
+  "language": "python",
+  "code": "line = input()\na, b = map(int, line.split())\nprint(a + b)"
+}
+
+
+
+
+
+
+
+
+

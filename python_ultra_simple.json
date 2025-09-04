@@ -1,0 +1,16 @@
+{
+  "submission_id": 3002,
+  "problem_id": 12,
+  "user_id": 5,
+  "language": "python",
+  "code": "import sys\nline = sys.stdin.readline()\na, b = map(int, line.split())\nprint(a + b)"
+}
+
+
+
+
+
+
+
+
+

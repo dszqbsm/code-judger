@@ -1,10 +1,10 @@
 package svc
 
 import (
-	"github.com/online-judge/code-judger/common/utils"
-	"github.com/online-judge/code-judger/services/user-api/internal/config"
-	"github.com/online-judge/code-judger/services/user-api/internal/middleware"
-	"github.com/online-judge/code-judger/services/user-api/models"
+	"github.com/dszqbsm/code-judger/common/utils"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/middleware"
+	"github.com/dszqbsm/code-judger/services/user-api/models"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"

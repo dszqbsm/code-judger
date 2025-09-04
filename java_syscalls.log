@@ -1,0 +1,170 @@
+execve("/usr/bin/java", ["java", "TestJava"], 0x7ffe814ecaa8 /* 41 vars */) = 0
+brk(NULL)                               = 0x5d26e8798000
+arch_prctl(0x3001 /* ARCH_??? */, 0x7ffe97dff3a0) = -1 EINVAL (无效的参数)
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7c23b11da000
+readlink("/proc/self/exe", "/usr/lib/jvm/java-11-openjdk-amd"..., 4096) = 43
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/glibc-hwcaps/x86-64-v3/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/glibc-hwcaps/x86-64-v3", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/glibc-hwcaps/x86-64-v2/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/glibc-hwcaps/x86-64-v2", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls/x86_64/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls/x86_64/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/tls", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/x86_64/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/x86_64/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/glibc-hwcaps/x86-64-v3/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/glibc-hwcaps/x86-64-v3", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/glibc-hwcaps/x86-64-v2/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/glibc-hwcaps/x86-64-v2", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls/x86_64/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls/x86_64/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/tls", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/x86_64/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/x86_64/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/x86_64", 0x7ffe97dfe5c0, 0) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=59492, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 59492, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7c23b11cb000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libz.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=108936, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 110776, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c23b11af000
+mprotect(0x7c23b11b1000, 98304, PROT_NONE) = 0
+mmap(0x7c23b11b1000, 69632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7c23b11b1000
+mmap(0x7c23b11c2000, 24576, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x13000) = 0x7c23b11c2000
+mmap(0x7c23b11c9000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x19000) = 0x7c23b11c9000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/libjli.so", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=82232, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 74016, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c23b119c000
+mprotect(0x7c23b119f000, 57344, PROT_NONE) = 0
+mmap(0x7c23b119f000, 40960, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7c23b119f000
+mmap(0x7c23b11a9000, 12288, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xd000) = 0x7c23b11a9000
+mmap(0x7c23b11ad000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x10000) = 0x7c23b11ad000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0P\237\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+pread64(3, "\4\0\0\0 \0\0\0\5\0\0\0GNU\0\2\0\0\300\4\0\0\0\3\0\0\0\0\0\0\0"..., 48, 848) = 48
+pread64(3, "\4\0\0\0\24\0\0\0\3\0\0\0GNU\0\325\31p\226\367\t\200\30)\261\30\257\33|\366c"..., 68, 896) = 68
+newfstatat(3, "", {st_mode=S_IFREG|0755, st_size=2220400, ...}, AT_EMPTY_PATH) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2264656, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c23b0e00000
+mprotect(0x7c23b0e28000, 2023424, PROT_NONE) = 0
+mmap(0x7c23b0e28000, 1658880, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x7c23b0e28000
+mmap(0x7c23b0fbd000, 360448, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1bd000) = 0x7c23b0fbd000
+mmap(0x7c23b1016000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x215000) = 0x7c23b1016000
+mmap(0x7c23b101c000, 52816, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7c23b101c000
+close(3)                                = 0
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7c23b1199000
+arch_prctl(ARCH_SET_FS, 0x7c23b1199740) = 0
+set_tid_address(0x7c23b1199a10)         = 628223
+set_robust_list(0x7c23b1199a20, 24)     = 0
+rseq(0x7c23b119a0e0, 0x20, 0, 0x53053053) = 0
+mprotect(0x7c23b1016000, 16384, PROT_READ) = 0
+mprotect(0x7c23b11c9000, 4096, PROT_READ) = 0
+mprotect(0x7c23b11ad000, 4096, PROT_READ) = 0
+mprotect(0x5d26e644e000, 4096, PROT_READ) = 0
+mprotect(0x7c23b1214000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x7c23b11cb000, 59492)           = 0
+getrandom("\xda\x96\xf2\xf4\xd4\x74\xa9\xeb", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x5d26e8798000
+brk(0x5d26e87b9000)                     = 0x5d26e87b9000
+readlink("/proc/self/exe", "/usr/lib/jvm/java-11-openjdk-amd"..., 4096) = 43
+access("/usr/lib/jvm/java-11-openjdk-amd64/lib/libjava.so", F_OK) = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/lib/jvm.cfg", O_RDONLY) = 3
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=54, ...}, AT_EMPTY_PATH) = 0
+read(3, "-server KNOWN\n-client IGNORE\n-ze"..., 4096) = 54
+read(3, "", 4096)                       = 0
+close(3)                                = 0
+newfstatat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so", {st_mode=S_IFREG|0644, st_size=23366064, ...}, 0) = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=23366064, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 19791768, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c23afa00000
+mmap(0x7c23afc83000, 13283328, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x283000) = 0x7c23afc83000
+mmap(0x7c23b092e000, 2473984, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xf2e000) = 0x7c23b092e000
+mmap(0x7c23b0b8a000, 1044480, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1189000) = 0x7c23b0b8a000
+mmap(0x7c23b0c89000, 356248, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7c23b0c89000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=59492, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 59492, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7c23b11cb000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=2260296, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 2275520, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c23af600000
+mprotect(0x7c23af69a000, 1576960, PROT_NONE) = 0
+mmap(0x7c23af69a000, 1118208, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x9a000) = 0x7c23af69a000
+mmap(0x7c23af7ab000, 454656, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1ab000) = 0x7c23af7ab000
+mmap(0x7c23af81b000, 57344, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x21a000) = 0x7c23af81b000
+mmap(0x7c23af829000, 10432, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7c23af829000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/libm.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/libm.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=940560, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 942344, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c23b10b2000
+mmap(0x7c23b10c0000, 507904, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe000) = 0x7c23b10c0000
+mmap(0x7c23b113c000, 372736, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8a000) = 0x7c23b113c000
+mmap(0x7c23b1197000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe4000) = 0x7c23b1197000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/jli/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/usr/lib/jvm/java-11-openjdk-amd64/bin/../lib/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (没有那个文件或目录)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+newfstatat(3, "", {st_mode=S_IFREG|0644, st_size=125488, ...}, AT_EMPTY_PATH) = 0
+mmap(NULL, 127720, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7c23b1092000
+mmap(0x7c23b1095000, 94208, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7c23b1095000
+mmap(0x7c23b10ac000, 16384, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a000) = 0x7c23b10ac000
+mmap(0x7c23b10b0000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1d000) = 0x7c23b10b0000
+close(3)                                = 0
+mprotect(0x7c23b10b0000, 4096, PROT_READ) = 0
+mprotect(0x7c23b1197000, 4096, PROT_READ) = 0
+mprotect(0x7c23af81b000, 45056, PROT_READ) = 0
+mprotect(0x7c23b0b8a000, 802816, PROT_READ) = 0
+getpid()                                = 628223
+munmap(0x7c23b11cb000, 59492)           = 0
+getpid()                                = 628223
+rt_sigaction(SIGRT_1, {sa_handler=0x7c23b0e91870, sa_mask=[], sa_flags=SA_RESTORER|SA_ONSTACK|SA_RESTART|SA_SIGINFO, sa_restorer=0x7c23b0e42520}, NULL, 8) = 0
+rt_sigprocmask(SIG_UNBLOCK, [RTMIN RT_1], NULL, 8) = 0
+mmap(NULL, 1048576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7c23b0d00000
+rt_sigprocmask(SIG_BLOCK, ~[], [], 8)   = 0
+clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x7c23b0dff910, parent_tid=0x7c23b0dff910, exit_signal=0, stack=0x7c23b0d00000, stack_size=0xfef00, tls=0x7c23b0dff640} => {parent_tid=[628224]}, 88) = 628224
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+futex(0x7c23b0dff910, FUTEX_WAIT_BITSET|FUTEX_CLOCK_REALTIME, 628224, NULL, FUTEX_BITSET_MATCH_ANY) = ? ERESTARTSYS (To be restarted if SA_RESTART is set)
+--- SIGWINCH {si_signo=SIGWINCH, si_code=SI_KERNEL} ---
+futex(0x7c23b0dff910, FUTEX_WAIT_BITSET|FUTEX_CLOCK_REALTIME, 628224, NULL, FUTEX_BITSET_MATCH_ANY) = 0
+exit_group(0)                           = ?
++++ exited with 0 +++

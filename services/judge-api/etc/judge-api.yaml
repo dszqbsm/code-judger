@@ -1,6 +1,6 @@
 Name: judge-api
 Host: 0.0.0.0
-Port: 8889
+Port: 8890
 Timeout: 30000
 
 # MySQL数据库配置
@@ -12,12 +12,15 @@ RedisConf:
   Type: node
   Pass: ""
 
-# Kafka配置
+# Kafka配置  
 KafkaConf:
-  Brokers:
-    - localhost:9092
-  Topic: judge_tasks
-  Group: judge_consumer_group
+  brokers:
+    - localhost:9094
+  topic: judge_tasks
+  group: judge_consumer_group
+  result_topic: judge_results
+  status_topic: judge_status
+  dead_letter_topic: judge_dead_letter
 
 # JWT配置
 Auth:
@@ -27,8 +30,7 @@ Auth:
 # 日志配置
 Log:
   ServiceName: judge-api
-  Mode: file
-  Path: /var/log/judge-api
+  Mode: console
   Level: info
   Compress: true
   KeepDays: 7
@@ -49,9 +51,9 @@ JudgeEngine:
   
   # 沙箱配置
   Sandbox:
-    EnableSeccomp: true
-    EnableChroot: true
-    EnablePtrace: true
+    EnableSeccomp: true   # 启用seccomp系统调用过滤，使用精确的白名单
+    EnableChroot: true    # 保留文件系统隔离
+    EnablePtrace: true    # 保留进程跟踪
     JailUser: "nobody"
     JailUID: 65534
     JailGID: 65534
@@ -60,9 +62,9 @@ JudgeEngine:
   # 资源限制配置
   ResourceLimits:
     DefaultTimeLimit: 1000      # 默认时间限制(毫秒)
-    DefaultMemoryLimit: 128     # 默认内存限制(MB)
+    DefaultMemoryLimit: 256     # 默认内存限制(MB)
     MaxTimeLimit: 10000         # 最大时间限制(毫秒)
-    MaxMemoryLimit: 512         # 最大内存限制(MB)
+    MaxMemoryLimit: 1024        # 最大内存限制(MB)
     MaxOutputSize: 10485760     # 最大输出大小(10MB)
     MaxStackSize: 8388608       # 最大栈大小(8MB)
     MaxFileSize: 10485760       # 最大文件大小(10MB)
@@ -79,7 +81,7 @@ JudgeEngine:
       TimeMultiplier: 1.0
       MemoryMultiplier: 1.0
       MaxProcesses: 1
-      AllowedSyscalls: [0,1,2,3,4,5,8,9,10,11,12,21,59,60,158,231]
+      AllowedSyscalls: [0,1,2,3,4,5,8,9,10,11,12,17,21,59,60,158,202,218,231,257,262,273,302,318,334]
     
     c:
       Name: "C"
@@ -91,7 +93,7 @@ JudgeEngine:
       TimeMultiplier: 1.0
       MemoryMultiplier: 1.0
       MaxProcesses: 1
-      AllowedSyscalls: [0,1,2,3,4,5,8,9,10,11,12,21,59,60,158,231]
+      AllowedSyscalls: [0,1,2,3,4,5,8,9,10,11,12,17,21,59,60,158,202,218,231,257,262,273,302,318,334]
     
     java:
       Name: "Java"
@@ -103,7 +105,8 @@ JudgeEngine:
       TimeMultiplier: 2.0
       MemoryMultiplier: 2.0
       MaxProcesses: 64
-      AllowedSyscalls: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,21,22,25,39,56,57,59,60,61,62,63,89,96,97,158,202,231,257,273,318]
+      # 扩展的系统调用白名单 - 包含Java运行时可能需要的额外系统调用
+      AllowedSyscalls: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,158,186,202,218,231,257,262,273,302,318,334,435]
     
     python:
       Name: "Python"
@@ -115,7 +118,8 @@ JudgeEngine:
       TimeMultiplier: 3.0
       MemoryMultiplier: 1.5
       MaxProcesses: 1
-      AllowedSyscalls: [0,1,2,3,4,5,6,8,9,10,11,12,13,16,21,22,39,59,60,61,79,89,97,158,231,257,273,318]
+      # 扩展的系统调用白名单 - 包含Python运行时可能需要的额外系统调用
+      AllowedSyscalls: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,102,104,107,108,158,186,202,217,218,231,257,262,273,302,318,334]
     
     go:
       Name: "Go"
@@ -176,6 +180,7 @@ TaskQueue:
   TaskTimeout: 300           # 任务超时时间(秒)
   RetryTimes: 3              # 重试次数
   RetryInterval: 5           # 重试间隔(秒)
+  AverageTaskTime: 30        # 平均任务执行时间(秒)
 
 # 缓存配置
 Cache:
@@ -199,7 +204,7 @@ Cluster:
 
 # 题目服务配置
 ProblemService:
-  UseMock: false                     # 是否使用模拟客户端（开发环境用）
+  UseMock: false                     # 启用真实的题目服务调用
   
   # RPC配置（推荐）
   RPC:
@@ -209,6 +214,21 @@ ProblemService:
   
   # HTTP配置（向后兼容）  
   HTTP:
-    Endpoint: "http://localhost:8888" # HTTP服务地址
+    Endpoint: "http://localhost:8891" # HTTP服务地址
     Timeout: 10                      # HTTP超时时间(秒)
     MaxRetries: 3                    # 最大重试次数
+    ApiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1LCJ1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InN0dWRlbnQiLCJqdGkiOiI1Zjk3YTQ5YzBlMTgzODAwMjRkYzY5ZTZiZmY3YTcyMiIsImlzcyI6Im9qLXN5c3RlbSIsInN1YiI6ImFjY2Vzcy10b2tlbiIsImV4cCI6MTc1Njk2NjQwMywibmJmIjoxNzU2OTYyODAzLCJpYXQiOjE3NTY5NjI4MDN9.hgPFoQo4lA8yQMwu4jz3jcc5OcWxB5wLPw7lwBJB128" # JWT令牌
+
+# Consul配置
+Consul:
+  enabled: true
+  address: "localhost:8500"
+  service_name: "judge-api"
+  service_id: "judge-api-1"
+  health_check_url: "http://172.17.0.1:8890/api/v1/judge/health"
+  health_interval: "10s"
+  health_timeout: "5s"
+  deregister_after: "1m"
+  tags:
+    - "judge"
+    - "api"

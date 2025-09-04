@@ -3,8 +3,8 @@ package health
 import (
 	"context"
 
-	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
-	"github.com/online-judge/code-judger/services/problem-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

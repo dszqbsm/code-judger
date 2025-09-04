@@ -1,0 +1,219 @@
+Name: judge-api
+Host: 0.0.0.0
+Port: 8890
+Timeout: 30000
+
+# MySQL数据库配置
+DataSource: oj_user:oj_password@tcp(localhost:3306)/oj_judge?charset=utf8mb4&parseTime=true&loc=Local
+
+# Redis配置
+RedisConf:
+  Host: localhost:6379
+  Type: node
+  Pass: ""
+
+# Kafka配置
+KafkaConf:
+  brokers:
+    - localhost:9092
+  topic: judge_tasks
+  group: judge_consumer_group
+  result_topic: judge_results
+  status_topic: judge_status
+  dead_letter_topic: judge_dead_letter
+
+# JWT配置
+Auth:
+  AccessSecret: "your-judge-access-secret-key-change-in-production"
+  AccessExpire: 86400
+
+# 日志配置
+Log:
+  ServiceName: judge-api
+  Mode: file
+  Path: /var/log/judge-api
+  Level: info
+  Compress: true
+  KeepDays: 7
+  StackCooldownMillis: 100
+
+# 自定义监控配置
+CustomMetrics:
+  Host: 0.0.0.0
+  Port: 9091
+  Path: /metrics
+
+# 判题引擎配置
+JudgeEngine:
+  # 工作目录配置
+  WorkDir: /tmp/judge
+  TempDir: /tmp/judge/temp
+  DataDir: /tmp/judge/data
+  
+  # 沙箱配置
+  Sandbox:
+    EnableSeccomp: true
+    EnableChroot: true
+    EnablePtrace: true
+    JailUser: "nobody"
+    JailUID: 65534
+    JailGID: 65534
+    MaxProcesses: 64
+    
+  # 资源限制配置
+  ResourceLimits:
+    DefaultTimeLimit: 1000      # 默认时间限制(毫秒)
+    DefaultMemoryLimit: 128     # 默认内存限制(MB)
+    MaxTimeLimit: 10000         # 最大时间限制(毫秒)
+    MaxMemoryLimit: 512         # 最大内存限制(MB)
+    MaxOutputSize: 10485760     # 最大输出大小(10MB)
+    MaxStackSize: 8388608       # 最大栈大小(8MB)
+    MaxFileSize: 10485760       # 最大文件大小(10MB)
+    
+  # 编译器配置
+  Compilers:
+    cpp:
+      Name: "C++"
+      Version: "g++ 9.4.0"
+      FileExtension: ".cpp"
+      CompileCommand: "g++ -o {executable} {source} -std=c++17 -O2 -Wall -Wextra"
+      ExecuteCommand: "{executable}"
+      CompileTimeout: 10000
+      TimeMultiplier: 1.0
+      MemoryMultiplier: 1.0
+      MaxProcesses: 1
+      AllowedSyscalls: [0,1,2,3,4,5,8,9,10,11,12,21,59,60,158,231]
+    
+    c:
+      Name: "C"
+      Version: "gcc 9.4.0"
+      FileExtension: ".c"
+      CompileCommand: "gcc -o {executable} {source} -std=c11 -O2 -Wall -Wextra"
+      ExecuteCommand: "{executable}"
+      CompileTimeout: 10000
+      TimeMultiplier: 1.0
+      MemoryMultiplier: 1.0
+      MaxProcesses: 1
+      AllowedSyscalls: [0,1,2,3,4,5,8,9,10,11,12,21,59,60,158,231]
+    
+    java:
+      Name: "Java"
+      Version: "OpenJDK 11.0.16"
+      FileExtension: ".java"
+      CompileCommand: "javac -cp . -d . {source}"
+      ExecuteCommand: "java -cp . -Xmx{memory_limit}m -Xss8m Main"
+      CompileTimeout: 15000
+      TimeMultiplier: 2.0
+      MemoryMultiplier: 2.0
+      MaxProcesses: 64
+      AllowedSyscalls: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,21,22,25,39,56,57,59,60,61,62,63,89,96,97,158,202,231,257,273,318]
+    
+    python:
+      Name: "Python"
+      Version: "Python 3.8.10"
+      FileExtension: ".py"
+      CompileCommand: ""
+      ExecuteCommand: "python3 {source}"
+      CompileTimeout: 5000
+      TimeMultiplier: 3.0
+      MemoryMultiplier: 1.5
+      MaxProcesses: 1
+      AllowedSyscalls: [0,1,2,3,4,5,6,8,9,10,11,12,13,16,21,22,39,59,60,61,79,89,97,158,231,257,273,318]
+    
+    go:
+      Name: "Go"
+      Version: "Go 1.19.8"
+      FileExtension: ".go"
+      CompileCommand: "go build -o {executable} {source}"
+      ExecuteCommand: "{executable}"
+      CompileTimeout: 10000
+      TimeMultiplier: 1.5
+      MemoryMultiplier: 1.2
+      MaxProcesses: 8
+      AllowedSyscalls: [0,1,2,3,4,5,8,9,10,11,12,13,16,21,22,39,56,57,59,60,61,62,89,96,97,158,202,231,257,273,318]
+    
+    javascript:
+      Name: "JavaScript"
+      Version: "Node.js 16.15.1"
+      FileExtension: ".js"
+      CompileCommand: ""
+      ExecuteCommand: "node {source}"
+      CompileTimeout: 5000
+      TimeMultiplier: 2.5
+      MemoryMultiplier: 1.8
+      MaxProcesses: 1
+      AllowedSyscalls: [0,1,2,3,4,5,6,8,9,10,11,12,13,16,21,22,39,59,60,61,89,97,158,231,257,273,318]
+
+  # 安全配置
+  Security:
+    MaxCodeLength: 65536       # 最大代码长度
+    MaxInputLength: 10485760   # 最大输入长度(10MB)
+    ForbiddenPatterns:         # 禁止的代码模式
+      - "system\\s*\\("
+      - "exec\\s*\\("
+      - "fork\\s*\\("
+      - "pthread_create"
+      - "CreateThread"
+      - "__import__\\s*\\("
+      - "eval\\s*\\("
+      - "Runtime\\.getRuntime"
+    
+    # 文件系统限制
+    FileSystemLimits:
+      MaxOpenFiles: 256
+      MaxFileSize: 10485760
+      ReadOnlyPaths:
+        - "/bin"
+        - "/lib"
+        - "/lib64"
+        - "/usr"
+      WritablePaths:
+        - "/tmp"
+        - "/dev/null"
+        - "/dev/zero"
+
+# 任务队列配置
+TaskQueue:
+  MaxWorkers: 10              # 最大工作协程数
+  QueueSize: 1000            # 队列大小
+  TaskTimeout: 300           # 任务超时时间(秒)
+  RetryTimes: 3              # 重试次数
+  RetryInterval: 5           # 重试间隔(秒)
+  AverageTaskTime: 30        # 平均任务执行时间(秒)
+
+# 缓存配置
+Cache:
+  JudgeResultExpire: 3600    # 判题结果缓存过期时间(秒)
+  QueueStatusExpire: 60      # 队列状态缓存过期时间(秒)
+  LanguageConfigExpire: 86400 # 语言配置缓存过期时间(秒)
+
+# 监控配置
+Monitor:
+  EnableMetrics: true        # 启用指标收集
+  MetricsInterval: 30        # 指标收集间隔(秒)
+  EnableTracing: false       # 启用链路追踪
+  TracingEndpoint: ""        # 追踪服务端点
+
+# 集群配置
+Cluster:
+  NodeId: "judge-node-01"
+  NodeName: "Judge Node 01"
+  HeartbeatInterval: 30      # 心跳间隔(秒)
+  NodeTimeout: 90            # 节点超时时间(秒)
+
+# 题目服务配置
+ProblemService:
+  UseMock: false                     # 是否使用模拟客户端（开发环境用）
+  
+  # RPC配置（推荐）
+  RPC:
+    Enabled: false                   # 启用RPC调用
+    Endpoint: "localhost:8889"       # RPC服务地址（不需要http://前缀）
+    Timeout: 5000                    # RPC超时时间(毫秒)
+  
+  # HTTP配置（向后兼容）  
+  HTTP:
+    Endpoint: "http://localhost:8891" # HTTP服务地址
+    Timeout: 10                      # HTTP超时时间(秒)
+    MaxRetries: 3                    # 最大重试次数
+    ApiKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1LCJ1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InN0dWRlbnQiLCJqdGkiOiJjOGI2MWE1NjRiMjUwMmNmN2I3MjczNjcxYzgxZjI1YSIsImlzcyI6Im9qLXN5c3RlbSIsInN1YiI6ImFjY2Vzcy10b2tlbiIsImV4cCI6MTc1Njc4Mjc2MywibmJmIjoxNzU2Nzc5MTYzLCJpYXQiOjE3NTY3NzkxNjN9.xdHxPEHwHFKLEcNG0k60dieecN7bNkHJtjvII29peqk" # JWT令牌

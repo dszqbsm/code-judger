@@ -1,38 +1,32 @@
 Name: problem-api
 Host: 0.0.0.0
-Port: 8889
-Timeout: 30000
+Port: 8891
 
 # 数据库配置
-DataSource: oj_user:oj_password@tcp(mysql:3306)/oj_problems?charset=utf8mb4&parseTime=true&loc=Local
+DataSource: root:oj_root_password@tcp(localhost:3306)/oj_system?charset=utf8mb4&parseTime=true&loc=Local
 
-# Redis缓存配置
-CacheConf:
-  - Host: redis:6379
-    Type: node
-    Pass: ""
-
-# JWT认证配置  
+# JWT认证配置
 Auth:
-  AccessSecret: "your-access-secret-change-in-production"
-  AccessExpire: 3600
+  AccessSecret: "oj-access-secret-key-2024"
+  AccessExpire: 3600  # 1小时
 
-# Consul服务注册
+# 服务注册配置
 Consul:
-  Host: consul:8500
-  Key: problem-api
+  Host: "localhost:8500"
+  Key: "problem-api"
 
 # 业务配置
 Business:
+  # 分页配置
   DefaultPageSize: 20
   MaxPageSize: 100
-  ProblemListCacheTTL: 300    # 5分钟
-  ProblemDetailCacheTTL: 1800 # 30分钟
-  MaxFileSize: 10485760       # 10MB
+  
+  # 缓存配置
+  ProblemListCacheTTL: 300    # 题目列表缓存5分钟
+  ProblemDetailCacheTTL: 1800 # 题目详情缓存30分钟
+  
+  # 文件上传配置
+  MaxFileSize: 10485760  # 10MB
 
-# 日志配置
-Log:
-  ServiceName: problem-api
-  Mode: file
-  Path: logs
-  Level: info
+# 注意: 当前服务使用自定义HTTP服务器(Gorilla Mux)而非go-zero框架
+# 配置文件保留用于未来可能的go-zero框架迁移

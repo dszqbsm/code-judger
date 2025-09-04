@@ -1,0 +1,18 @@
+{
+  "submission_id": 6001,
+  "problem_id": 1,
+  "user_id": 5,
+  "language": "java",
+  "code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int a = scanner.nextInt();\n        int b = scanner.nextInt();\n        System.out.println(a + b);\n        scanner.close();\n    }\n}",
+  "time_limit": 1000,
+  "memory_limit": 128
+}
+
+
+
+
+
+
+
+
+

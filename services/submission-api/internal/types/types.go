@@ -13,6 +13,26 @@ type BaseResp struct {
 // 提交相关类型定义
 // ===========================================
 
+// 重新判题请求
+type RejudgeSubmissionReq struct {
+	SubmissionID int64 `path:"id" validate:"required"`
+}
+
+// 重新判题响应
+type RejudgeSubmissionResp struct {
+	Code    int                       `json:"code"`
+	Message string                    `json:"message"`
+	Data    RejudgeSubmissionRespData `json:"data"`
+}
+
+type RejudgeSubmissionRespData struct {
+	SubmissionID  int64  `json:"submission_id"`
+	Status        string `json:"status"`
+	Message       string `json:"message"`
+	QueuePosition int    `json:"queue_position"`
+	EstimatedTime int    `json:"estimated_time"`
+}
+
 // 创建提交请求
 type CreateSubmissionReq struct {
 	ProblemID int64  `json:"problem_id" validate:"required"`
@@ -50,18 +70,29 @@ type GetSubmissionResp struct {
 }
 
 type GetSubmissionRespData struct {
-	SubmissionID int64             `json:"submission_id"`
-	ProblemID    int64             `json:"problem_id"`
-	UserID       int64             `json:"user_id"`
-	Username     string            `json:"username"`
-	Language     string            `json:"language"`
-	Code         string            `json:"code"`
-	Status       string            `json:"status"`
-	Result       *SubmissionResult `json:"result,omitempty"`
-	CompileInfo  *CompileInfo      `json:"compile_info,omitempty"`
-	CreatedAt    string            `json:"created_at"`
-	JudgedAt     *string           `json:"judged_at,omitempty"`
-	UpdatedAt    string            `json:"updated_at"`
+	SubmissionID    int64             `json:"submission_id"`
+	ProblemID       int64             `json:"problem_id"`
+	UserID          int64             `json:"user_id"`
+	Username        string            `json:"username"`
+	Language        string            `json:"language"`
+	Code            string            `json:"code"`
+	CodeLength      int               `json:"code_length"`
+	Status          string            `json:"status"`
+	ContestID       *int64            `json:"contest_id,omitempty"`
+	Score           *int32            `json:"score,omitempty"`
+	TimeUsed        *int32            `json:"time_used,omitempty"`
+	MemoryUsed      *int32            `json:"memory_used,omitempty"`
+	CompileOutput   *string           `json:"compile_output,omitempty"`
+	RuntimeOutput   *string           `json:"runtime_output,omitempty"`
+	ErrorMessage    *string           `json:"error_message,omitempty"`
+	TestCasesPassed *int32            `json:"test_cases_passed,omitempty"`
+	TestCasesTotal  *int32            `json:"test_cases_total,omitempty"`
+	JudgeServer     *string           `json:"judge_server,omitempty"`
+	Result          *SubmissionResult `json:"result,omitempty"`
+	CompileInfo     *CompileInfo      `json:"compile_info,omitempty"`
+	CreatedAt       string            `json:"created_at"`
+	JudgedAt        *string           `json:"judged_at,omitempty"`
+	UpdatedAt       string            `json:"updated_at"`
 }
 
 // 判题结果
@@ -96,6 +127,7 @@ type GetSubmissionListReq struct {
 	Page      int    `form:"page,default=1" validate:"min=1"`
 	PageSize  int    `form:"page_size,default=20" validate:"min=1,max=100"`
 	ProblemID int64  `form:"problem_id,optional"`
+	ContestID int64  `form:"contest_id,optional"`
 	Status    string `form:"status,optional"`
 	Language  string `form:"language,optional"`
 	UserID    int64  `form:"user_id,optional"`
@@ -124,6 +156,7 @@ type SubmissionSummary struct {
 	Username     string  `json:"username"`
 	Language     string  `json:"language"`
 	Status       string  `json:"status"`
+	ContestID    *int64  `json:"contest_id,omitempty"`
 	Score        int     `json:"score"`
 	TimeUsed     int     `json:"time_used"`
 	MemoryUsed   int     `json:"memory_used"`
@@ -134,6 +167,29 @@ type SubmissionSummary struct {
 // 取消提交请求
 type CancelSubmissionReq struct {
 	SubmissionID int64 `path:"submission_id" validate:"required"`
+}
+
+// 获取队列统计请求
+type GetQueueStatsReq struct {
+	// 无需参数
+}
+
+// 获取队列统计响应
+type GetQueueStatsResp struct {
+	Code    int                   `json:"code"`
+	Message string                `json:"message"`
+	Data    GetQueueStatsRespData `json:"data"`
+}
+
+type GetQueueStatsRespData struct {
+	TotalTasks         int64   `json:"total_tasks"`          // 总任务数
+	PendingTasks       int64   `json:"pending_tasks"`        // 等待中任务数
+	ProcessingTasks    int64   `json:"processing_tasks"`     // 处理中任务数
+	CompletedTasks     int64   `json:"completed_tasks"`      // 已完成任务数
+	CurrentQueueLength int64   `json:"current_queue_length"` // 当前队列长度
+	AverageWaitTime    float64 `json:"average_wait_time"`    // 平均等待时间
+	AverageJudgeTime   float64 `json:"average_judge_time"`   // 平均判题时间
+	ActiveJudges       int     `json:"active_judges"`        // 活跃判题服务器数量
 }
 
 // 高级搜索请求
@@ -429,4 +485,102 @@ type SimilarityResult struct {
 	SimilarityScore float64  `json:"similarity_score"`
 	MatchedFeatures []string `json:"matched_features"`
 	Confidence      float64  `json:"confidence"`
+}
+
+// ===========================================
+// 判题相关代理接口类型定义
+// ===========================================
+
+// 获取提交判题结果请求
+type GetSubmissionJudgeResultReq struct {
+	SubmissionID int64 `path:"submission_id" validate:"required"`
+}
+
+// 获取提交判题结果响应
+type GetSubmissionJudgeResultResp struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    JudgeResult `json:"data"`
+}
+
+type JudgeResult struct {
+	SubmissionId int64            `json:"submission_id"`
+	Status       string           `json:"status"`
+	Score        int              `json:"score"`
+	TimeUsed     int              `json:"time_used"`
+	MemoryUsed   int              `json:"memory_used"`
+	CompileInfo  CompileInfo      `json:"compile_info"`
+	TestCases    []TestCaseResult `json:"test_cases"`
+	JudgeInfo    JudgeInfo        `json:"judge_info"`
+}
+
+type JudgeInfo struct {
+	JudgeServer     string `json:"judge_server"`
+	JudgeTime       string `json:"judge_time"`
+	LanguageVersion string `json:"language_version"`
+}
+
+// 获取提交判题状态请求
+type GetSubmissionJudgeStatusReq struct {
+	SubmissionID int64 `path:"submission_id" validate:"required"`
+}
+
+// 获取提交判题状态响应
+type GetSubmissionJudgeStatusResp struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    JudgeStatus `json:"data"`
+}
+
+type JudgeStatus struct {
+	SubmissionId    int64  `json:"submission_id"`
+	Status          string `json:"status"`
+	Progress        int    `json:"progress"`
+	CurrentTestCase int    `json:"current_test_case"`
+	TotalTestCases  int    `json:"total_test_cases"`
+	Message         string `json:"message"`
+}
+
+// 重新判题请求（代理版本）
+type RejudgeSubmissionProxyReq struct {
+	SubmissionID int64 `path:"submission_id" validate:"required"`
+}
+
+// 重新判题响应（代理版本）
+type RejudgeSubmissionProxyResp struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    RejudgeData `json:"data"`
+}
+
+type RejudgeData struct {
+	SubmissionId int64  `json:"submission_id"`
+	Status       string `json:"status"`
+	Message      string `json:"message"`
+}
+
+// 获取判题队列状态响应
+type GetJudgeQueueStatusResp struct {
+	Code    int            `json:"code"`
+	Message string         `json:"message"`
+	Data    JudgeQueueData `json:"data"`
+}
+
+type JudgeQueueData struct {
+	QueueLength    int         `json:"queue_length"`
+	PendingTasks   int         `json:"pending_tasks"`
+	RunningTasks   int         `json:"running_tasks"`
+	CompletedTasks int         `json:"completed_tasks"`
+	FailedTasks    int         `json:"failed_tasks"`
+	QueueItems     []QueueItem `json:"queue_items"`
+}
+
+type QueueItem struct {
+	SubmissionId  int64  `json:"submission_id"`
+	UserId        int64  `json:"user_id"`
+	ProblemId     int64  `json:"problem_id"`
+	Language      string `json:"language"`
+	Priority      int    `json:"priority"`
+	QueueTime     string `json:"queue_time"`
+	EstimatedTime int    `json:"estimated_time"`
 }

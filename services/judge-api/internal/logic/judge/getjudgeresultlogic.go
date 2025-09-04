@@ -2,32 +2,36 @@ package judge
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/scheduler"
-	"github.com/online-judge/code-judger/services/judge-api/internal/svc"
-	"github.com/online-judge/code-judger/services/judge-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/service"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type GetJudgeResultLogic struct {
 	logx.Logger
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx         context.Context
+	svcCtx      *svc.ServiceContext
+	taskService *service.TaskService
 }
 
 func NewGetJudgeResultLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetJudgeResultLogic {
 	return &GetJudgeResultLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		Logger:      logx.WithContext(ctx),
+		ctx:         ctx,
+		svcCtx:      svcCtx,
+		taskService: service.NewTaskService(ctx, svcCtx),
 	}
 }
 
 func (l *GetJudgeResultLogic) GetJudgeResult(req *types.GetJudgeResultReq) (resp *types.GetJudgeResultResp, err error) {
-	// 验证提交ID
+	l.Logger.Infof("开始获取判题结果: SubmissionID=%d", req.SubmissionId)
+
+	// 1. 验证提交ID
 	if req.SubmissionId <= 0 {
+		l.Logger.Errorf("无效的提交ID: %d", req.SubmissionId)
 		return &types.GetJudgeResultResp{
 			BaseResp: types.BaseResp{
 				Code:    400,
@@ -36,10 +40,10 @@ func (l *GetJudgeResultLogic) GetJudgeResult(req *types.GetJudgeResultReq) (resp
 		}, nil
 	}
 
-	// 从调度器获取任务状态
-	task, err := l.findTaskBySubmissionId(req.SubmissionId)
+	// 2. 从任务服务获取任务信息（真实业务逻辑）
+	task, err := l.taskService.FindTaskBySubmissionID(req.SubmissionId)
 	if err != nil {
-		logx.Errorf("Failed to find task for submission %d: %v", req.SubmissionId, err)
+		l.Logger.Errorf("未找到提交ID %d 的判题任务: %v", req.SubmissionId, err)
 		return &types.GetJudgeResultResp{
 			BaseResp: types.BaseResp{
 				Code:    404,
@@ -48,8 +52,22 @@ func (l *GetJudgeResultLogic) GetJudgeResult(req *types.GetJudgeResultReq) (resp
 		}, nil
 	}
 
-	// 检查任务是否完成
-	if task.Status != "completed" && task.Status != "failed" {
+	// 3. TODO: 权限验证（需要从JWT或请求中获取用户信息）
+	// userID := getUserIDFromContext(l.ctx)
+	// userRole := getUserRoleFromContext(l.ctx)
+	// if err := l.taskService.ValidateTaskAccess(task, userID, userRole); err != nil {
+	//     l.Logger.Errorf("用户权限验证失败: %v", err)
+	//     return &types.GetJudgeResultResp{
+	//         BaseResp: types.BaseResp{
+	//             Code:    403,
+	//             Message: "权限不足：无法查看该判题结果",
+	//         },
+	//     }, nil
+	// }
+
+	// 4. 检查任务是否完成
+	if !l.taskService.IsTaskCompleted(task) {
+		l.Logger.Infof("判题任务尚未完成: SubmissionID=%d, Status=%s", req.SubmissionId, task.Status)
 		return &types.GetJudgeResultResp{
 			BaseResp: types.BaseResp{
 				Code:    202,
@@ -57,13 +75,14 @@ func (l *GetJudgeResultLogic) GetJudgeResult(req *types.GetJudgeResultReq) (resp
 			},
 			Data: types.JudgeResult{
 				SubmissionId: req.SubmissionId,
-				Status:       task.Status,
+				Status:       l.convertTaskStatusToJudgeStatus(task.Status),
 			},
 		}, nil
 	}
 
-	// 任务失败
+	// 5. 任务失败处理
 	if task.Status == "failed" {
+		l.Logger.Errorf("判题任务失败: SubmissionID=%d, Error=%s", req.SubmissionId, task.Error)
 		return &types.GetJudgeResultResp{
 			BaseResp: types.BaseResp{
 				Code:    500,
@@ -72,13 +91,29 @@ func (l *GetJudgeResultLogic) GetJudgeResult(req *types.GetJudgeResultReq) (resp
 			Data: types.JudgeResult{
 				SubmissionId: req.SubmissionId,
 				Status:       "system_error",
+				ErrorMessage: task.Error,
 			},
 		}, nil
 	}
 
-	// 返回判题结果
-	result := task.Result
-	if result == nil {
+	// 6. 任务取消处理
+	if task.Status == "cancelled" {
+		l.Logger.Infof("判题任务已取消: SubmissionID=%d", req.SubmissionId)
+		return &types.GetJudgeResultResp{
+			BaseResp: types.BaseResp{
+				Code:    200,
+				Message: "判题已取消",
+			},
+			Data: types.JudgeResult{
+				SubmissionId: req.SubmissionId,
+				Status:       "cancelled",
+			},
+		}, nil
+	}
+
+	// 7. 验证判题结果存在
+	if task.Result == nil {
+		l.Logger.Errorf("判题结果不存在: SubmissionID=%d", req.SubmissionId)
 		return &types.GetJudgeResultResp{
 			BaseResp: types.BaseResp{
 				Code:    500,
@@ -87,8 +122,11 @@ func (l *GetJudgeResultLogic) GetJudgeResult(req *types.GetJudgeResultReq) (resp
 		}, nil
 	}
 
-	logx.Infof("Retrieved judge result for submission %d: status=%s, score=%d",
-		req.SubmissionId, result.Status, result.Score)
+	// 8. 返回完整的判题结果
+	result := task.Result
+	
+	l.Logger.Infof("成功获取判题结果: SubmissionID=%d, Status=%s, Score=%d, TimeUsed=%dms, MemoryUsed=%dKB",
+		req.SubmissionId, result.Status, result.Score, result.TimeUsed, result.MemoryUsed)
 
 	return &types.GetJudgeResultResp{
 		BaseResp: types.BaseResp{
@@ -99,52 +137,20 @@ func (l *GetJudgeResultLogic) GetJudgeResult(req *types.GetJudgeResultReq) (resp
 	}, nil
 }
 
-// 根据提交ID查找任务（简化实现）
-func (l *GetJudgeResultLogic) findTaskBySubmissionId(submissionId int64) (*scheduler.JudgeTask, error) {
-	// TODO: 这里应该实现更高效的查找方法
-	// 可以考虑：
-	// 1. 在调度器中维护submission_id到task_id的映射
-	// 2. 使用数据库存储任务状态
-	// 3. 使用缓存加速查询
-
-	// 现在简化实现：遍历调度器中的任务
-	stats := l.svcCtx.TaskScheduler.GetStats()
-	if stats.TotalTasks == 0 {
-		return nil, fmt.Errorf("no tasks found")
+// convertTaskStatusToJudgeStatus 将任务状态转换为判题状态
+func (l *GetJudgeResultLogic) convertTaskStatusToJudgeStatus(taskStatus string) string {
+	switch taskStatus {
+	case "pending":
+		return "waiting"
+	case "running":
+		return "judging"
+	case "completed":
+		return "finished"
+	case "failed":
+		return "system_error"
+	case "cancelled":
+		return "cancelled"
+	default:
+		return taskStatus
 	}
-
-	// 这里需要调度器提供根据submission_id查找任务的方法
-	// 暂时返回一个模拟的任务
-	return &scheduler.JudgeTask{
-		SubmissionID: submissionId,
-		Status:       "completed",
-		Result: &types.JudgeResult{
-			SubmissionId: submissionId,
-			Status:       "accepted",
-			Score:        100,
-			TimeUsed:     150,
-			MemoryUsed:   1024,
-			CompileInfo: types.CompileInfo{
-				Success: true,
-				Message: "",
-				Time:    1200,
-			},
-			TestCases: []types.TestCaseResult{
-				{
-					CaseId:     1,
-					Status:     "accepted",
-					TimeUsed:   150,
-					MemoryUsed: 1024,
-					Input:      "test input",
-					Output:     "test output",
-					Expected:   "test output",
-				},
-			},
-			JudgeInfo: types.JudgeInfo{
-				JudgeServer:     "judge-node-01",
-				JudgeTime:       "2024-01-15T10:30:00Z",
-				LanguageVersion: "g++ 9.4.0",
-			},
-		},
-	}, nil
 }

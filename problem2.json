@@ -1,0 +1,23 @@
+{
+  "title": "斐波那契数列",
+  "description": "斐波那契数列是一个经典的数学序列，其中每个数是前两个数的和。数列从0和1开始：0, 1, 1, 2, 3, 5, 8, 13, 21, 34, ...。给定一个正整数n，请计算斐波那契数列的第n个数（从第0个开始计数）。",
+  "input_format": "输入一行包含一个正整数n（0 ≤ n ≤ 50）。",
+  "output_format": "输出斐波那契数列的第n个数。",
+  "sample_input": "10",
+  "sample_output": "55",
+  "difficulty": "medium",
+  "time_limit": 1000,
+  "memory_limit": 128,
+  "languages": ["cpp", "c", "java", "python"],
+  "tags": ["数学", "递归", "动态规划"],
+  "is_public": true
+}
+
+
+
+
+
+
+
+
+

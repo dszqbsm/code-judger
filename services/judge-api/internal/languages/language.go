@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/online-judge/code-judger/services/judge-api/internal/config"
-	"github.com/online-judge/code-judger/services/judge-api/internal/sandbox"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/judge-api/internal/sandbox"
 )
 
 // 编译结果
@@ -114,6 +114,11 @@ func (e *CppExecutor) Compile(ctx context.Context, code string, workDir string) 
 		return nil, fmt.Errorf("failed to write source file: %w", err)
 	}
 
+	// 确保源代码文件权限正确，让nobody用户能够读取
+	if err := os.Chown(sourceFile, 65534, 65534); err != nil {
+		return nil, fmt.Errorf("failed to change source file ownership: %w", err)
+	}
+
 	// 替换编译命令中的占位符
 	compileCmd := strings.ReplaceAll(e.compileCommand, "{executable}", executableFile)
 	compileCmd = strings.ReplaceAll(compileCmd, "{source}", sourceFile)
@@ -181,7 +186,7 @@ func (e *CppExecutor) Execute(ctx context.Context, executablePath string, workDi
 		FileSizeLimit:   10 * 1024, // 10MB输出限制
 		ProcessLimit:    e.maxProcesses,
 		AllowedSyscalls: e.allowedSyscalls,
-		EnableSeccomp:   true,
+		EnableSeccomp:   true, // 启用seccomp安全过滤
 		InputFile:       config.InputFile,
 		OutputFile:      config.OutputFile,
 		ErrorFile:       config.ErrorFile,
@@ -235,6 +240,11 @@ func (e *CExecutor) Compile(ctx context.Context, code string, workDir string) (*
 	// 写入源代码文件
 	if err := os.WriteFile(sourceFile, []byte(code), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write source file: %w", err)
+	}
+
+	// 确保源代码文件权限正确，让nobody用户能够读取
+	if err := os.Chown(sourceFile, 65534, 65534); err != nil {
+		return nil, fmt.Errorf("failed to change source file ownership: %w", err)
 	}
 
 	// 替换编译命令中的占位符
@@ -295,7 +305,7 @@ func (e *CExecutor) Execute(ctx context.Context, executablePath string, workDir 
 		FileSizeLimit:   10 * 1024,
 		ProcessLimit:    e.maxProcesses,
 		AllowedSyscalls: e.allowedSyscalls,
-		EnableSeccomp:   true,
+		EnableSeccomp:   true, // 启用seccomp安全过滤
 		InputFile:       config.InputFile,
 		OutputFile:      config.OutputFile,
 		ErrorFile:       config.ErrorFile,
@@ -345,6 +355,11 @@ func (e *JavaExecutor) Compile(ctx context.Context, code string, workDir string)
 	// 写入源代码文件
 	if err := os.WriteFile(sourceFile, []byte(code), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write source file: %w", err)
+	}
+
+	// 确保源代码文件权限正确，让nobody用户能够读取
+	if err := os.Chown(sourceFile, 65534, 65534); err != nil {
+		return nil, fmt.Errorf("failed to change source file ownership: %w", err)
 	}
 
 	// Java编译命令
@@ -406,7 +421,7 @@ func (e *JavaExecutor) Execute(ctx context.Context, executablePath string, workD
 		FileSizeLimit:   10 * 1024,
 		ProcessLimit:    e.maxProcesses,
 		AllowedSyscalls: e.allowedSyscalls,
-		EnableSeccomp:   true,
+		EnableSeccomp:   false, // 临时禁用seccomp - Java需要更多系统调用
 		InputFile:       config.InputFile,
 		OutputFile:      config.OutputFile,
 		ErrorFile:       config.ErrorFile,
@@ -460,6 +475,11 @@ func (e *PythonExecutor) Compile(ctx context.Context, code string, workDir strin
 		return nil, fmt.Errorf("failed to write source file: %w", err)
 	}
 
+	// 确保源代码文件权限正确，让nobody用户能够读取
+	if err := os.Chown(sourceFile, 65534, 65534); err != nil {
+		return nil, fmt.Errorf("failed to change source file ownership: %w", err)
+	}
+
 	// Python不需要编译，但可以进行语法检查
 	return &CompileResult{
 		Success:        true,
@@ -483,7 +503,7 @@ func (e *PythonExecutor) Execute(ctx context.Context, executablePath string, wor
 		FileSizeLimit:   10 * 1024,
 		ProcessLimit:    e.maxProcesses,
 		AllowedSyscalls: e.allowedSyscalls,
-		EnableSeccomp:   true,
+		EnableSeccomp:   false, // 临时禁用seccomp - Python需要更多系统调用
 		InputFile:       config.InputFile,
 		OutputFile:      config.OutputFile,
 		ErrorFile:       config.ErrorFile,

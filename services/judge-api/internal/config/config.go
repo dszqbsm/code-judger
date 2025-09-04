@@ -47,13 +47,19 @@ type Config struct {
 
 	// 题目服务配置
 	ProblemService ProblemServiceConf
+
+	// Consul配置
+	Consul ConsulConf
 }
 
 // Kafka配置
 type KafkaConf struct {
-	Brokers []string `json:"brokers"`
-	Topic   string   `json:"topic"`
-	Group   string   `json:"group"`
+	Brokers         []string `json:"brokers"`
+	Topic           string   `json:"topic"`             // 判题任务队列
+	Group           string   `json:"group"`             // 消费者组
+	ResultTopic     string   `json:"result_topic"`      // 判题结果队列
+	StatusTopic     string   `json:"status_topic"`      // 状态更新队列
+	DeadLetterTopic string   `json:"dead_letter_topic"` // 死信队列
 }
 
 // 判题引擎配置
@@ -114,11 +120,12 @@ type CompilerConf struct {
 
 // 任务队列配置
 type TaskQueueConf struct {
-	MaxWorkers    int // 最大工作协程数
-	QueueSize     int // 队列大小
-	TaskTimeout   int // 任务超时时间(秒)
-	RetryTimes    int // 重试次数
-	RetryInterval int // 重试间隔(秒)
+	MaxWorkers      int // 最大工作协程数
+	QueueSize       int // 队列大小
+	TaskTimeout     int // 任务超时时间(秒)
+	RetryTimes      int // 重试次数
+	RetryInterval   int // 重试间隔(秒)
+	AverageTaskTime int // 平均任务执行时间(秒)，用于预估等待时间
 }
 
 // 缓存配置
@@ -174,7 +181,21 @@ type ProblemServiceConf struct {
 		Endpoint   string `json:",omitempty"` // HTTP服务地址
 		Timeout    int    `json:",omitempty"` // HTTP超时时间(秒)
 		MaxRetries int    `json:",omitempty"` // 最大重试次数
+		ApiKey     string `json:",omitempty"` // JWT令牌或API密钥
 	} `json:",omitempty"`
 
 	UseMock bool // 是否使用模拟客户端（开发环境）
+}
+
+// Consul配置
+type ConsulConf struct {
+	Enabled         bool     `json:"enabled" yaml:"enabled"`           // 是否启用Consul
+	Address         string   `json:"address" yaml:"address"`           // Consul地址
+	ServiceName     string   `json:"service_name" yaml:"service_name"`      // 服务名称
+	ServiceID       string   `json:"service_id" yaml:"service_id"`        // 服务ID
+	HealthCheckURL  string   `json:"health_check_url" yaml:"health_check_url"`  // 健康检查URL
+	HealthInterval  string   `json:"health_interval" yaml:"health_interval"`   // 健康检查间隔
+	HealthTimeout   string   `json:"health_timeout" yaml:"health_timeout"`    // 健康检查超时
+	DeregisterAfter string   `json:"deregister_after" yaml:"deregister_after"`  // 失败后注销时间
+	Tags            []string `json:"tags" yaml:"tags"`             // 服务标签
 }

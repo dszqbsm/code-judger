@@ -1,4 +1,4 @@
-module github.com/online-judge/code-judger/services/user-rpc
+module github.com/dszqbsm/code-judger/services/user-rpc
 
 go 1.21
 

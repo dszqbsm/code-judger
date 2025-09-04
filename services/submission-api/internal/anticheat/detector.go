@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/online-judge/code-judger/services/submission-api/internal/config"
-	"github.com/online-judge/code-judger/services/submission-api/models"
+	"github.com/dszqbsm/code-judger/services/submission-api/internal/config"
+	"github.com/dszqbsm/code-judger/services/submission-api/models"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -98,10 +98,10 @@ func (d *Detector) DetectSimilarity(ctx context.Context, submission1, submission
 	matchedFeatures := d.getMatchedFeatures(features1, features2)
 
 	result := &SimilarityResult{
-		SubmissionID1:   submission1.Id,
-		SubmissionID2:   submission2.Id,
-		UserID1:         submission1.UserId,
-		UserID2:         submission2.UserId,
+		SubmissionID1:   submission1.ID,
+		SubmissionID2:   submission2.ID,
+		UserID1:         submission1.UserID,
+		UserID2:         submission2.UserID,
 		SimilarityScore: finalScore,
 		MatchedFeatures: matchedFeatures,
 		Confidence:      confidence,
@@ -128,7 +128,7 @@ func (d *Detector) BatchDetection(ctx context.Context, problemID int64, contestI
 	for i := 0; i < len(submissions); i++ {
 		for j := i + 1; j < len(submissions); j++ {
 			// 跳过同一用户的提交
-			if submissions[i].UserId == submissions[j].UserId {
+			if submissions[i].UserID == submissions[j].UserID {
 				continue
 			}
 

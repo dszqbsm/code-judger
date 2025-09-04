@@ -3,10 +3,10 @@ package handler
 import (
 	"net/http"
 
-	"github.com/online-judge/code-judger/services/user-api/internal/handler/admin"
-	"github.com/online-judge/code-judger/services/user-api/internal/handler/auth"
-	"github.com/online-judge/code-judger/services/user-api/internal/handler/users"
-	"github.com/online-judge/code-judger/services/user-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/handler/admin"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/handler/auth"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/handler/users"
+	"github.com/dszqbsm/code-judger/services/user-api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )

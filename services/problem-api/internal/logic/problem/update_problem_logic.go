@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
-	"github.com/online-judge/code-judger/services/problem-api/internal/svc"
-	"github.com/online-judge/code-judger/services/problem-api/internal/types"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/middleware"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/svc"
+	"github.com/dszqbsm/code-judger/services/problem-api/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -17,18 +19,20 @@ type UpdateProblemLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	r      *http.Request
 }
 
-func NewUpdateProblemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateProblemLogic {
+func NewUpdateProblemLogic(ctx context.Context, svcCtx *svc.ServiceContext, r *http.Request) *UpdateProblemLogic {
 	return &UpdateProblemLogic{
 		Logger: logx.WithContext(ctx),
 		ctx:    ctx,
 		svcCtx: svcCtx,
+		r:      r,
 	}
 }
 
 func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *types.UpdateProblemResp, err error) {
-	// 验证题目ID
+	// 1. 验证题目ID
 	if req.Id <= 0 {
 		return &types.UpdateProblemResp{
 			BaseResp: types.BaseResp{
@@ -38,13 +42,39 @@ func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *t
 		}, nil
 	}
 
-	// 获取当前用户ID（从JWT中获取，这里先模拟）
-	currentUserId := int64(1) // 临时硬编码
+	// 2. 获取用户信息
+	var user *middleware.UserInfo
 
-	// 查询现有题目
+	// 首先尝试从go-zero的JWT上下文获取用户信息
+	user, err = middleware.GetUserFromContext(l.ctx)
+	if err != nil {
+		// 如果上下文中没有，尝试从HTTP请求头获取
+		if l.r != nil {
+			user, err = middleware.GetUserFromJWT(l.r, l.svcCtx.JWTManager)
+			if err != nil {
+				logx.Errorf("获取用户信息失败: %v", err)
+				return &types.UpdateProblemResp{
+					BaseResp: types.BaseResp{
+						Code:    401,
+						Message: "认证失败：" + err.Error(),
+					},
+				}, nil
+			}
+		} else {
+			logx.Errorf("无法获取用户信息: 上下文和请求头都为空")
+			return &types.UpdateProblemResp{
+				BaseResp: types.BaseResp{
+					Code:    401,
+					Message: "认证失败：缺少用户信息",
+				},
+			}, nil
+		}
+	}
+
+	// 3. 查询现有题目
 	existingProblem, err := l.svcCtx.ProblemModel.FindOne(l.ctx, req.Id)
 	if err != nil {
-		logx.Errorf("Failed to find problem: id=%d, error=%v", req.Id, err)
+		logx.Errorf("查找题目失败: id=%d, error=%v", req.Id, err)
 		return &types.UpdateProblemResp{
 			BaseResp: types.BaseResp{
 				Code:    404,
@@ -53,8 +83,9 @@ func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *t
 		}, nil
 	}
 
-	// 检查题目是否被删除
+	// 4. 检查题目是否被删除
 	if existingProblem.DeletedAt.Valid {
+		logx.Errorf("用户 %s (ID: %d) 尝试修改已删除的题目: ID=%d", user.Username, user.UserID, req.Id)
 		return &types.UpdateProblemResp{
 			BaseResp: types.BaseResp{
 				Code:    404,
@@ -63,18 +94,23 @@ func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *t
 		}, nil
 	}
 
-	// 检查权限（只有创建者和管理员可以修改）
-	if existingProblem.CreatedBy != currentUserId {
-		// TODO: 检查是否为管理员
+	// 5. 验证用户权限（使用中间件的权限验证函数）
+	if err = middleware.ValidateUpdateProblemPermission(user.Role, user.UserID, existingProblem.CreatedBy); err != nil {
+		logx.Errorf("用户 %s (ID: %d) 权限验证失败，无法修改题目 %d: %v",
+			user.Username, user.UserID, req.Id, err)
 		return &types.UpdateProblemResp{
 			BaseResp: types.BaseResp{
 				Code:    403,
-				Message: "没有权限修改此题目",
+				Message: err.Error(),
 			},
 		}, nil
 	}
 
-	// 验证更新参数
+	// 6. 记录操作开始日志
+	logx.Infof("用户 %s (ID: %d, Role: %s) 开始修改题目: ID=%d, 标题=%s",
+		user.Username, user.UserID, user.Role, req.Id, existingProblem.Title)
+
+	// 7. 验证更新参数
 	if err := l.validateUpdateRequest(req); err != nil {
 		return &types.UpdateProblemResp{
 			BaseResp: types.BaseResp{
@@ -84,7 +120,7 @@ func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *t
 		}, nil
 	}
 
-	// 构建更新数据
+	// 8. 构建更新数据
 	updatedProblem := *existingProblem
 	hasChanges := false
 
@@ -128,14 +164,32 @@ func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *t
 
 	// 更新Languages
 	if len(req.Languages) > 0 {
-		languagesJson, _ := json.Marshal(req.Languages)
+		languagesJson, err := json.Marshal(req.Languages)
+		if err != nil {
+			logx.Errorf("序列化编程语言列表失败: %v", err)
+			return &types.UpdateProblemResp{
+				BaseResp: types.BaseResp{
+					Code:    400,
+					Message: "编程语言格式错误",
+				},
+			}, nil
+		}
 		updatedProblem.Languages = sql.NullString{String: string(languagesJson), Valid: true}
 		hasChanges = true
 	}
 
 	// 更新Tags
 	if len(req.Tags) > 0 {
-		tagsJson, _ := json.Marshal(req.Tags)
+		tagsJson, err := json.Marshal(req.Tags)
+		if err != nil {
+			logx.Errorf("序列化标签列表失败: %v", err)
+			return &types.UpdateProblemResp{
+				BaseResp: types.BaseResp{
+					Code:    400,
+					Message: "标签格式错误",
+				},
+			}, nil
+		}
 		updatedProblem.Tags = sql.NullString{String: string(tagsJson), Valid: true}
 		hasChanges = true
 	}
@@ -144,8 +198,10 @@ func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *t
 	updatedProblem.IsPublic = req.IsPublic
 	hasChanges = true
 
-	// 如果没有变更，直接返回
+	// 9. 如果没有变更，直接返回
 	if !hasChanges {
+		logx.Infof("用户 %s (ID: %d) 尝试更新题目 %d，但没有实际变更",
+			user.Username, user.UserID, req.Id)
 		return &types.UpdateProblemResp{
 			BaseResp: types.BaseResp{
 				Code:    200,
@@ -159,22 +215,24 @@ func (l *UpdateProblemLogic) UpdateProblem(req *types.UpdateProblemReq) (resp *t
 		}, nil
 	}
 
-	// 执行更新（带缓存清理）
+	// 10. 执行更新（带缓存清理）
 	updatedProblem.UpdatedAt = time.Now()
 	err = l.svcCtx.ProblemModel.UpdateWithCache(l.ctx, &updatedProblem)
 	if err != nil {
-		logx.Errorf("Failed to update problem: id=%d, error=%v", req.Id, err)
+		logx.Errorf("用户 %s (ID: %d) 更新题目失败: id=%d, error=%v",
+			user.Username, user.UserID, req.Id, err)
 		return &types.UpdateProblemResp{
 			BaseResp: types.BaseResp{
 				Code:    500,
-				Message: "更新题目失败",
+				Message: "更新题目失败，请稍后重试",
 			},
 		}, nil
 	}
 
-	// 记录操作日志
-	logx.Infof("Problem updated successfully: id=%d, title=%s, updated_by=%d", 
-		req.Id, updatedProblem.Title, currentUserId)
+	// 11. 记录成功操作日志
+	logx.Infof("题目更新成功: ID=%d, 标题=%s, 更新者=%s (ID: %d), 难度=%s, 公开=%t",
+		req.Id, updatedProblem.Title, user.Username, user.UserID,
+		updatedProblem.Difficulty, updatedProblem.IsPublic)
 
 	return &types.UpdateProblemResp{
 		BaseResp: types.BaseResp{

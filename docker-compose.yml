@@ -282,7 +282,7 @@ services:
   # 特性：分布式一致性、多数据中心、DNS接口、Web UI、API网关
   # ===========================================
   consul:
-    image: consul:1.16                          # HashiCorp官方Consul镜像，企业级服务治理
+    image: consul:1.15                          # HashiCorp官方Consul镜像，企业级服务治理
     container_name: oj-consul                   # 容器名称
     restart: unless-stopped                     # 重启策略：确保服务发现高可用
     ports:                                      # 端口映射
